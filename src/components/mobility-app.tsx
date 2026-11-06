@@ -648,7 +648,13 @@ export default function MobilityApp({
         <div className="mode-bar">
           <span>
             <span className="status-dot" />
-            {isDemo ? "DEMO EXPLORER" : "CONNECTED TO SUPABASE"}
+            {isDemo
+              ? "DEMO EXPLORER"
+              : dataError
+                ? "BACKEND NEEDS ATTENTION"
+                : data
+                  ? "CONNECTED TO SUPABASE"
+                  : "CONNECTING TO SUPABASE"}
           </span>
           <p>
             {isDemo
@@ -663,6 +669,21 @@ export default function MobilityApp({
           <div className="error-banner" role="alert">
             Data could not load: {dataError}
             <button onClick={refresh}>Retry</button>
+          </div>
+        )}
+        {!isDemo && data && !data.places.length && (
+          <div className="info-box" role="status">
+            <Info size={22} />
+            <div>
+              <strong>Supabase connected · no places returned</strong>
+              <p>
+                The public query returned no place records. Your teammate should
+                check whether data has been imported and whether the public read
+                policies allow access. Demo places have not been substituted.
+                Map selection still works; real journey planning also needs a
+                pedestrian routing provider.
+              </p>
+            </div>
           </div>
         )}
         {current === "home" && (
@@ -1329,7 +1350,9 @@ export default function MobilityApp({
                               <br />
                               {status
                                 ? `Status observed ${date(status.observed_at)} · ${status.source}`
-                                : `Location record ${date(p.created_at)} · no status feed`}
+                                : p.created_at
+                                  ? `Location record ${date(p.created_at)} · no status feed`
+                                  : "Location update time not supplied · no status feed"}
                               {status?.occupancy_status === "full"
                                 ? " · Full at last observation; compare the alternatives below."
                                 : ""}

@@ -5,6 +5,8 @@ smarter-qatar/
   .env.example
   .gitignore
   README.md
+  docs/BACKEND-CONNECTION.md
+  docs/STRUCTURE.md
   docs/VALIDATION.md
   docs/VENGEANCEUI-LICENSE.txt
   next-env.d.ts
@@ -26,6 +28,8 @@ smarter-qatar/
   src/components/ui/stagger-text.tsx
   src/components/ui/stats-counter.tsx
   src/data/demo.ts
+  scripts/check-backend.mjs
+  src/lib/supabase-config.ts
   src/lib/supabase-server.ts
   src/lib/supabase.ts
   src/services/data.ts
@@ -33,5 +37,6 @@ smarter-qatar/
   src/services/planner.ts
   src/types/database.ts
   tests/planner.test.ts
+  tests/supabase-config.test.ts
   tsconfig.json
 ```

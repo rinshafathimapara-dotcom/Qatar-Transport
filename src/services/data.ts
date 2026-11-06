@@ -1,7 +1,9 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseConfig } from "@/lib/supabase";
 import { demo } from "@/data/demo";
 import type { Collection } from "@/types/database";
 export async function loadDataset(): Promise<Collection> {
+  if (supabaseConfig.status === "error")
+    throw new Error(supabaseConfig.message);
   if (!supabase) return structuredClone(demo);
   const names = Object.keys(demo) as (keyof Collection)[];
   const entries = await Promise.all(

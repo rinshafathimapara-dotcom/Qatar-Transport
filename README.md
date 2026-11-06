@@ -55,6 +55,8 @@ Local demo profile and saved journeys are stored in this browser's localStorage.
 
 Both public Supabase values activate connected mode. Connected data errors are displayed; the application never silently substitutes demo fixtures for failed Supabase reads. Restart Next.js after changing environment variables.
 
+See [the connection check and teammate handoff](docs/BACKEND-CONNECTION.md) for the tested backend state and Windows setup instructions.
+
 ## Backend handoff
 
 The exact 15 table names and all supplied columns are represented in `src/types/database.ts`. The contract does not define SQL types, nullability, enum values or default generators. The TypeScript types express current frontend assumptions; reconcile these with the teammate's generated Supabase types before connecting real data. No schema was created or changed remotely.
@@ -72,7 +74,7 @@ Required for the connected app:
 
 The browser client uses only public keys. The request-scoped server helper validates a bearer token through `getUser` and uses the same user's permissions. It does not use the service role. Protected personal screens are client-session gated; database RLS is the actual security boundary.
 
-Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed queries for larger imports. Shade levels, confidence, schedule days, costs and routing calendars need a final type/unit contract. No live backend was identified or queried during this run.
+Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed queries for larger imports. Shade levels, confidence, schedule days, costs and routing calendars need a final type/unit contract. The supplied backend has now been queried read-only; see docs/BACKEND-CONNECTION.md for schema differences and zero-visible-row results.
 
 ## Providers and production boundaries
 
@@ -96,7 +98,7 @@ StatsCounter and StaggerText are adapted from Ashutoshx7/VengeanceUI under MIT; 
 
 ## Validation and limitations
 
-Dependency installation, strict TypeScript, Next.js production build and planner tests were run successfully. The tests cover demo ranking, unsupported location pairs, no invented transit on short routes and same-location rejection. See `docs/VALIDATION.md` for scope. Browser preview QA was unavailable because this environment did not expose the required Sites browser tool; responsive styles and interactions have not been visually verified. Real authentication, Supabase data/RLS and provider routes cannot be end-to-end tested without credentials.
+Dependency installation, strict TypeScript, Next.js production build and planner tests were run successfully. The tests cover demo ranking, unsupported location pairs, no invented transit on short routes and same-location rejection. See `docs/VALIDATION.md` for scope. Browser preview QA was unavailable because this environment did not expose the required Sites browser tool; responsive styles and interactions have not been visually verified. Public Supabase dataset queries and authentication settings have been verified with the supplied publishable key. Authenticated flows, database administration/RLS and provider routes still need separate end-to-end checks.
 
 ## GitHub (after reviewing locally)
 
