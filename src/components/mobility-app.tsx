@@ -44,6 +44,7 @@ import { demo } from "@/data/demo";
 import { loadDataset } from "@/services/data";
 import { plan, rank } from "@/services/planner";
 import { distance } from "@/services/geo";
+import { normalizePriority, storedPriority } from "@/services/preferences";
 import LocationSearch from "./location-search";
 import StatsCounter from "./ui/stats-counter";
 import StaggerText from "./ui/stagger-text";
@@ -52,6 +53,7 @@ const Map = dynamic(() => import("./map"), {
   loading: () => <div className="map-loading">Preparing your city map…</div>,
 });
 const priorities: Priority[] = [
+  "Balanced",
   "Fastest",
   "Shortest",
   "Most comfortable",
@@ -93,6 +95,7 @@ export default function MobilityApp({
 }) {
   const router = useRouter(),
     reduced = useReducedMotion();
+  const [includeDemo, setIncludeDemo] = useState(false);
   const [data, setData] = useState<Collection | null>(null),
     [dataError, setDataError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -136,16 +139,17 @@ export default function MobilityApp({
   const signed = !!user || (isDemo && demoUser);
   const refresh = useCallback(() => {
     setDataError("");
-    loadDataset()
+    loadDataset({ includeDemo })
       .then((d) => {
         setData(d);
-        if (!isDemo && d.places.length) {
-          setFrom(d.places[0]);
-          setTo(d.places[1] || d.places[0]);
+        const locations = [...d.places, ...d.transport_stops];
+        if (!isDemo && locations.length) {
+          setFrom(locations[0]);
+          setTo(locations[1] || locations[0]);
         }
       })
       .catch((e) => setDataError(e.message));
-  }, []);
+  }, [includeDemo]);
   useEffect(refresh, [refresh]);
   useEffect(() => {
     if (!supabase) {
@@ -214,14 +218,16 @@ export default function MobilityApp({
             latitude: r.destination_latitude,
             longitude: r.destination_longitude,
           },
-          priority: r.selected_priority as Priority,
+          priority: normalizePriority(r.selected_priority),
           route: r.route_snapshot as unknown as Journey,
         })),
       );
       if (p.data) {
-        setPrefs(p.data);
-        if (priorities.includes(p.data.preferred_priority as Priority))
-          setPriority(p.data.preferred_priority as Priority);
+        setPrefs({
+          ...p.data,
+          preferred_priority: normalizePriority(p.data.preferred_priority),
+        });
+        setPriority(normalizePriority(p.data.preferred_priority));
       }
       setFullName(profile.data?.full_name || "");
     }
@@ -278,8 +284,12 @@ export default function MobilityApp({
       }
     }
     const q = new URLSearchParams(window.location.search),
-      a = data.places.find((p) => p.id === q.get("from")),
-      b = data.places.find((p) => p.id === q.get("to"));
+      a = [...data.places, ...data.transport_stops].find(
+        (p) => p.id === q.get("from"),
+      ),
+      b = [...data.places, ...data.transport_stops].find(
+        (p) => p.id === q.get("to"),
+      );
     if (a && b) {
       setFrom(a);
       setTo(b);
@@ -312,7 +322,7 @@ export default function MobilityApp({
           destination_name: to.name,
           destination_latitude: to.latitude,
           destination_longitude: to.longitude,
-          selected_priority: priority,
+          selected_priority: storedPriority(priority),
           route_snapshot: route as unknown as Json,
         })
         .select()
@@ -418,6 +428,7 @@ export default function MobilityApp({
       }
       const payload = {
         ...prefs,
+        preferred_priority: storedPriority(prefs.preferred_priority),
         user_id: user.id,
         updated_at: new Date().toISOString(),
       };
@@ -440,7 +451,7 @@ export default function MobilityApp({
         return;
       }
     } else localStorage.setItem("sq-demo-prefs", JSON.stringify(prefs));
-    setPriority(prefs.preferred_priority as Priority);
+    setPriority(normalizePriority(prefs.preferred_priority));
     notify(
       "Travel preferences saved. Ranking uses your default priority; other preferences are advisory until provider data supports them.",
     );
@@ -472,7 +483,17 @@ export default function MobilityApp({
             setFrom(p);
             setRoutes([]);
           }}
-          places={data?.places || []}
+          places={
+            data
+              ? [
+                  ...data.places,
+                  ...data.transport_stops.map((s) => ({
+                    ...s,
+                    category: `${s.mode} station`,
+                  })),
+                ]
+              : []
+          }
           onError={notify}
         />
         <button
@@ -493,7 +514,17 @@ export default function MobilityApp({
             setTo(p);
             setRoutes([]);
           }}
-          places={data?.places || []}
+          places={
+            data
+              ? [
+                  ...data.places,
+                  ...data.transport_stops.map((s) => ({
+                    ...s,
+                    category: `${s.mode} station`,
+                  })),
+                ]
+              : []
+          }
           onError={notify}
         />
       </div>
@@ -661,6 +692,18 @@ export default function MobilityApp({
               ? "A working prototype. Sample journeys, no live feeds."
               : "Imported data · provider availability may vary."}
           </p>
+          {!isDemo && (
+            <button
+              className="text-button"
+              aria-pressed={includeDemo}
+              onClick={() => {
+                setIncludeDemo(!includeDemo);
+                setRoutes([]);
+              }}
+            >
+              {includeDemo ? "Hide demo records" : "Include demo records"}
+            </button>
+          )}
           <Link href="/explore">
             About the data <ArrowUpRight size={13} />
           </Link>
@@ -671,21 +714,26 @@ export default function MobilityApp({
             <button onClick={refresh}>Retry</button>
           </div>
         )}
-        {!isDemo && data && !data.places.length && (
-          <div className="info-box" role="status">
-            <Info size={22} />
-            <div>
-              <strong>Supabase connected · no places returned</strong>
-              <p>
-                The public query returned no place records. Your teammate should
-                check whether data has been imported and whether the public read
-                policies allow access. Demo places have not been substituted.
-                Map selection still works; real journey planning also needs a
-                pedestrian routing provider.
-              </p>
+        {!isDemo &&
+          data &&
+          !data.places.length &&
+          !data.transport_stops.length && (
+            <div className="info-box" role="status">
+              <Info size={22} />
+              <div>
+                <strong>
+                  Supabase connected · no destinations or stops returned
+                </strong>
+                <p>
+                  The public query returned no destination or station records.
+                  Your teammate should check whether data has been imported and
+                  whether the public read policies allow access. Demo places
+                  have not been substituted. Map selection still works; real
+                  journey planning also needs a pedestrian routing provider.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         {current === "home" && (
           <>
             <section className="hero">
@@ -945,6 +993,31 @@ export default function MobilityApp({
                     </button>
                   ))}
                 </div>
+                {!isDemo &&
+                  data &&
+                  (!data.transport_stops.length ||
+                    !data.transit_routes.length ||
+                    !data.transit_route_stops.length ||
+                    !data.transit_schedules.length) && (
+                    <div className="info-box" role="status">
+                      <TrainFront size={22} />
+                      <div>
+                        <strong>
+                          Transit planning needs more readable data
+                        </strong>
+                        <p>
+                          Loaded {data.transport_stops.length} stops,{" "}
+                          {data.transit_routes.length} routes,{" "}
+                          {data.transit_route_stops.length} route links and{" "}
+                          {data.transit_schedules.length} schedules. The MVP
+                          needs all four, with matching IDs and forward stop
+                          order. Your teammate should check imports and read
+                          policies. Walking also needs a configured pedestrian
+                          provider.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 {current === "comfort" && (
                   <div className="info-box">
                     <Sun size={22} />
@@ -992,7 +1065,13 @@ export default function MobilityApp({
                                 ? "First for your priority"
                                 : "Another way"}
                             </span>
-                            <span>{r.isDemo ? "DEMO" : "ESTIMATE"}</span>
+                            <span>
+                              {r.isDemo
+                                ? "DEMO"
+                                : r.isApproximate
+                                  ? "MVP APPROXIMATION"
+                                  : "ESTIMATE"}
+                            </span>
                           </div>
                           <h3>{r.title}</h3>
                           <div className="route-metrics">
@@ -1267,7 +1346,17 @@ export default function MobilityApp({
                     label="Destination"
                     value={to}
                     onChange={setTo}
-                    places={data?.places || []}
+                    places={
+                      data
+                        ? [
+                            ...data.places,
+                            ...data.transport_stops.map((s) => ({
+                              ...s,
+                              category: `${s.mode} station`,
+                            })),
+                          ]
+                        : []
+                    }
                     onError={notify}
                   />
                   <span>Sorted by approximate proximity</span>
@@ -1350,9 +1439,7 @@ export default function MobilityApp({
                               <br />
                               {status
                                 ? `Status observed ${date(status.observed_at)} · ${status.source}`
-                                : p.created_at
-                                  ? `Location record ${date(p.created_at)} · no status feed`
-                                  : "Location update time not supplied · no status feed"}
+                                : "Location update time not supplied · no status feed"}
                               {status?.occupancy_status === "full"
                                 ? " · Full at last observation; compare the alternatives below."
                                 : ""}

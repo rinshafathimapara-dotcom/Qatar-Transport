@@ -59,7 +59,7 @@ See [the connection check and teammate handoff](docs/BACKEND-CONNECTION.md) for 
 
 ## Backend handoff
 
-The exact 15 table names and all supplied columns are represented in `src/types/database.ts`. The contract does not define SQL types, nullability, enum values or default generators. The TypeScript types express current frontend assumptions; reconcile these with the teammate's generated Supabase types before connecting real data. No schema was created or changed remotely.
+The final 15-table contract, including `admin_users`, is represented in `src/types/database.ts` and `src/data/backend-contract.json`. No `created_at` is expected on stops, transit routes or parking locations. Schedules contain only the eight supplied columns; shade levels are text. Array element semantics, nullability, constraints and defaults still need generated database types or administrative verification. No schema was changed remotely. `admin_users` is typed but never read by the public application or used for client-side authorization.
 
 Required for the connected app:
 
@@ -74,21 +74,23 @@ Required for the connected app:
 
 The browser client uses only public keys. The request-scoped server helper validates a bearer token through `getUser` and uses the same user's permissions. It does not use the service role. Protected personal screens are client-session gated; database RLS is the actual security boundary.
 
-Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed queries for larger imports. Shade levels, confidence, schedule days, costs and routing calendars need a final type/unit contract. The supplied backend has now been queried read-only; see docs/BACKEND-CONNECTION.md for schema differences and zero-visible-row results.
+Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed queries for larger imports. Shade label meanings, confidence units and schedule-day array conventions need semantic documentation. The supplied backend has now been queried read-only; see docs/BACKEND-CONNECTION.md for schema differences and zero-visible-row results.
 
 ## Providers and production boundaries
 
 - `services/geo.ts`: replaceable geocoding and pedestrian-routing interfaces.
 - `/api/geocode`: Photon adapter, debounced browser calls, cancellation and bounded 24-hour in-process cache. No external geocoding is called without an endpoint. Local dataset suggestions always work. Deploying later requires a shared cache, per-user rate limits, and a provider agreement; do not point at an unapproved public demo service.
 - `/api/walk`: GraphHopper `foot` profile, unencoded geometry, server-only key, timeout and Qatar coordinate bounds. Verify your chosen instance has a true pedestrian profile and licensed Qatar data. It is not tested against a real provider.
-- `services/planner.ts`: real mode currently returns pedestrian routing only. Connected transit, fares, service calendars, transfer paths, station accessibility, geometry and shade matching require a validated routing/network adapter. Imported schedule rows alone are not enough to claim a usable connection. No full Qatar-wide routing is claimed.
+- `services/planner.ts` and `services/transit.ts`: real mode uses the pedestrian provider when configured. The bounded transit MVP requires an active imported route, forward ordered stops within 1.5 km of the endpoints, and a schedule row for each consecutive segment. It labels routes as schematic approximations; sampled segment durations may come from different services and omit waiting time. Days, service calendars, access paths, transfers, fares and shade are not verified. No upcoming departure or complete routing engine is claimed. With neither a pedestrian route nor supported transit data, planning reports the blocker.
 - Demo routes are bounded to four predefined places. Only the central–Katara demo pair includes the synthetic Metro corridor. Tram stops are discoverable, but no tram, bus, Metrolink or ride-hailing route is fabricated.
 - Demo walking geometries are straight-line schematics. They are not safe navigation instructions. Comfort numbers and QAR 2 fare are labelled synthetic.
 - Parking uses Haversine straight-line distance. Real walking geometry is available only through the configured pedestrian provider. No walking time is inferred from straight-line parking distance. Live spaces are shown only from a non-demo live status observed within five minutes. Other observations remain unverified; compare nearby alternatives when a full status is supplied.
 - Demand forecasts come from the table or demo fixtures. Timestamps are shown in Qatar time. No live Uber integration exists.
-- Only default priority affects ranking. The other saved preferences are advisory until provider coverage supports hard constraints.
+- Balanced ranking uses a documented heuristic: minutes + 3 × walking kilometres + 5 × transfers. Backend `balanced`, `fastest`, and `cheapest` map into the existing UI controls. Only default priority affects ranking. The other saved preferences are advisory until provider coverage supports hard constraints.
 
 ## Maps, photos and UI licences
+
+The map uses Leaflet 1.9.4. Places, transport stops, parking and shade segments come from Supabase. Places and station names both populate location search. Connected mode excludes demo rows by default; use **Include demo records** explicitly. Join records inherit inclusion from parent routes and stops.
 
 Default tiles use OpenStreetMap standard raster tiles with visible attribution. For local evaluation only; review https://operations.osmfoundation.org/policies/tiles/ before wider use and choose a suitable commercial or self-hosted tile provider. OSM tiles require Internet access. No tiles are prefetched or scraped.
 

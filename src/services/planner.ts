@@ -1,7 +1,15 @@
 import type { Collection, Journey, Location, Priority } from "@/types/database";
 import { coord, distance, walkingProvider } from "./geo";
+import { approximateTransit } from "./transit";
 export function rank(routes: Journey[], priority: Priority) {
   return [...routes].sort((a, b) => {
+    if (priority === "Balanced")
+      return (
+        a.minutes +
+        (a.walking / 1000) * 3 +
+        a.transfers * 5 -
+        (b.minutes + (b.walking / 1000) * 3 + b.transfers * 5)
+      );
     if (priority === "Shortest") return a.distance - b.distance;
     if (priority === "Budget-friendly")
       return (
@@ -21,27 +29,44 @@ export async function plan(
   if (distance(from, to) < 30)
     throw new Error("Choose two different locations.");
   if (!demoMode) {
-    const w = await walkingProvider.route(from, to);
-    // Transit is intentionally gated: schedules alone do not establish access paths,
-    // service timezone, calendar exceptions, fares or complete network geometry.
-    return [
-      {
-        id: "walking",
-        title: "Walk to your destination",
-        minutes: w.minutes,
-        distance: w.distance,
-        walking: w.distance,
-        cost: 0,
-        transfers: 0,
-        shade: null,
-        isDemo: false,
-        legs: [{ mode: "walk", name: `Walk to ${to.name}`, ...w }],
-        warning:
-          "Estimated pedestrian route. Shade coverage unavailable. Transit results require a validated network adapter.",
-        source: "Configured GraphHopper pedestrian provider",
-      },
-    ];
+    const transit = approximateTransit(from, to, data);
+    try {
+      const w = await walkingProvider.route(from, to);
+      return [
+        {
+          id: "walking",
+          title: "Walk to your destination",
+          minutes: w.minutes,
+          distance: w.distance,
+          walking: w.distance,
+          cost: 0,
+          transfers: 0,
+          shade: null,
+          isDemo: !!(from.is_demo || to.is_demo),
+          legs: [{ mode: "walk", name: `Walk to ${to.name}`, ...w }],
+          warning:
+            "Estimated pedestrian route. Shade coverage unavailable. Imported transit candidates, when present, are separately labelled MVP approximations.",
+          source: "Configured GraphHopper pedestrian provider",
+        },
+        ...transit,
+      ];
+    } catch (error) {
+      if (transit.length)
+        return transit.map((r) => ({
+          ...r,
+          warning:
+            r.warning +
+            " Pedestrian provider unavailable: " +
+            (error as Error).message,
+        }));
+      throw new Error(
+        "Journey planning is blocked: " +
+          (error as Error).message +
+          " No supported single-route transit candidate was found with nearby stops, ordered links and segment schedules. Import the required rows or use the unconfigured-backend demo.",
+      );
+    }
   }
+
   const supported = new Set(["msheireb", "katara", "souq", "museum"]);
   if (!supported.has(from.id) || !supported.has(to.id))
     throw new Error(

@@ -7,7 +7,7 @@
 - Browser QA: not run. The required `cua_repl.js` browser tool was unavailable; no alternate browser-control path or preview server was started.
 - Supabase connection: public SDK queries succeeded for all ten dataset tables using the supplied publishable key; each returned zero visible rows. Auth settings verified; no account created. Authenticated flows and actual RLS policies remain unverified. See BACKEND-CONNECTION.md.
 - Real geocoder/routing: implemented adapter endpoints, not exercised against configured providers.
-- Maps: MapLibre compiled; OSM attribution configured. Tile access, mobile layout and marker interaction need browser verification.
+- Maps: Leaflet replaces MapLibre; OSM attribution and database marker/shade layers configured. Tile access, mobile layout and marker interaction need browser verification.
 - Demo save/reopen/delete: implemented with localStorage and route handoff; not browser-tested.
 - No fake live metrics: demo counts derive from actual fixtures, routes and forecasts explicitly labelled, no availability counts in demo.
 - External VengeanceUI collage URL: returned HTTP 404. Local replacement implemented. Counter and stagger definitions inspected/adapted with MIT notice.
@@ -15,3 +15,6 @@
 - No remote database writes, deployment or repository creation. Application source pushed successfully to the user-supplied Qatar-Transport repository on main after GitHub access was updated. No application deployment.
 
 - Connection configuration checks: REST URL normalization, whitespace handling, incomplete configuration errors and invalid URL rejection covered by automated tests. No keys committed.
+
+- Final schema: all 15 exact column probes succeeded. All ten public dataset queries still returned zero visible rows. No database writes or policy changes.
+- Transit MVP tests cover required schedules, forward-only edges, duplicate sequence rejection, no fabricated reverse service and backend priority mappings.

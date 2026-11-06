@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import nextEnv from "@next/env";
+import contract from "../src/data/backend-contract.json" with { type: "json" };
 const { loadEnvConfig } = nextEnv;
 
 loadEnvConfig(process.cwd());
@@ -38,7 +39,7 @@ const results = await Promise.all(
   tables.map(async (table) => {
     const { count, error } = await client
       .from(table)
-      .select("id", { count: "exact", head: true })
+      .select(contract[table], { count: "exact", head: true })
       .abortSignal(AbortSignal.timeout(15000));
     return {
       table,

@@ -7,6 +7,7 @@ export type Json =
   | Json[];
 type Base = { id: string; created_at: string };
 export interface Rows {
+  admin_users: { user_id: string; created_at: string };
   profiles: Base & { full_name: string; email: string };
   user_preferences: Base & {
     user_id: string;
@@ -27,7 +28,8 @@ export interface Rows {
     source_license: string;
     is_demo: boolean;
   };
-  transport_stops: Base & {
+  transport_stops: {
+    id: string;
     name: string;
     mode: string;
     line_name: string;
@@ -36,7 +38,8 @@ export interface Rows {
     source: string;
     is_demo: boolean;
   };
-  transit_routes: Base & {
+  transit_routes: {
+    id: string;
     mode: string;
     route_code: string;
     route_name: string;
@@ -59,13 +62,10 @@ export interface Rows {
     to_stop_id: string;
     departure_time: string;
     arrival_time: string;
-    days_of_week: string[];
-    valid_from: string;
-    valid_until: string;
-    source: string;
-    is_demo: boolean;
+    days_of_week: Json[];
   };
-  parking_locations: Base & {
+  parking_locations: {
+    id: string;
     name: string;
     latitude: number;
     longitude: number;
@@ -91,7 +91,7 @@ export interface Rows {
     start_longitude: number;
     end_latitude: number;
     end_longitude: number;
-    shade_level: number;
+    shade_level: string;
     data_source: string;
     is_demo: boolean;
   };
@@ -159,9 +159,10 @@ export type Location = {
   latitude: number;
   longitude: number;
   category?: string;
+  is_demo?: boolean;
 };
 export type Priority =
-  "Fastest" | "Shortest" | "Most comfortable" | "Budget-friendly";
+  "Balanced" | "Fastest" | "Shortest" | "Most comfortable" | "Budget-friendly";
 export type Leg = {
   mode: "walk" | "metro" | "tram" | "bus";
   name: string;
@@ -179,6 +180,7 @@ export type Journey = {
   transfers: number;
   shade: number | null;
   isDemo: boolean;
+  isApproximate?: boolean;
   legs: Leg[];
   warning: string;
   source: string;

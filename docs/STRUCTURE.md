@@ -14,6 +14,7 @@ smarter-qatar/
   package.json
   postcss.config.mjs
   public/images/doha.jpg
+  scripts/check-backend.mjs
   src/app/[section]/page.tsx
   src/app/api/geocode/route.ts
   src/app/api/walk/route.ts
@@ -27,16 +28,19 @@ smarter-qatar/
   src/components/mobility-app.tsx
   src/components/ui/stagger-text.tsx
   src/components/ui/stats-counter.tsx
+  src/data/backend-contract.json
   src/data/demo.ts
-  scripts/check-backend.mjs
   src/lib/supabase-config.ts
   src/lib/supabase-server.ts
   src/lib/supabase.ts
   src/services/data.ts
   src/services/geo.ts
   src/services/planner.ts
+  src/services/preferences.ts
+  src/services/transit.ts
   src/types/database.ts
   tests/planner.test.ts
   tests/supabase-config.test.ts
+  tests/transit.test.ts
   tsconfig.json
 ```

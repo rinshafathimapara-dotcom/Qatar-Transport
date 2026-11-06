@@ -1,0 +1,17 @@
+{
+  "profiles": "id,full_name,email,created_at",
+  "user_preferences": "id,user_id,preferred_priority,max_walking_minutes,avoid_direct_sun,prefer_public_transport,budget_limit,created_at,updated_at",
+  "places": "id,name,category,address,latitude,longitude,source,source_license,is_demo,created_at",
+  "transport_stops": "id,name,mode,line_name,latitude,longitude,source,is_demo",
+  "transit_routes": "id,mode,route_code,route_name,operator,color,is_active,source,is_demo",
+  "transit_route_stops": "id,route_id,stop_id,stop_sequence",
+  "transit_schedules": "id,route_id,from_stop_id,to_stop_id,departure_time,arrival_time,days_of_week",
+  "parking_locations": "id,name,latitude,longitude,capacity,parking_type,is_public,source,is_demo",
+  "parking_status": "id,parking_location_id,available_spaces,occupancy_status,observed_at,source,is_live,is_demo",
+  "shade_segments": "id,start_latitude,start_longitude,end_latitude,end_longitude,shade_level,data_source,is_demo",
+  "demand_forecasts": "id,area_name,latitude,longitude,forecast_for,demand_level,estimated_wait_minutes,price_pressure,confidence,source,is_demo,created_at",
+  "saved_journeys": "id,user_id,origin_name,origin_latitude,origin_longitude,destination_name,destination_latitude,destination_longitude,selected_priority,route_snapshot,created_at",
+  "data_sources": "id,name,source_url,licence_status,description,last_updated,created_at",
+  "dataset_imports": "id,filename,target_table,records_processed,records_imported,records_rejected,import_status,error_summary,imported_at",
+  "admin_users": "user_id,created_at"
+}

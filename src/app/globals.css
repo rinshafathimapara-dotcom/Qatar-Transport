@@ -2076,3 +2076,11 @@ dd {
     scroll-behavior: auto !important;
   }
 }
+/* Preserve overlay hierarchy with Leaflet's own panes. */
+.map-canvas { z-index: 0; }
+.map-label,.map-notice,.map-demo { z-index: 2; pointer-events: none; }
+.leaflet-mobility-icon { background: none; border: none; }
+.leaflet-container { font: inherit; background: #e4ece6; }
+.leaflet-control-attribution { font-size: 10px; }
+.mode-bar { flex-wrap: wrap; }
+.mode-bar .text-button { font-size: 10px; }

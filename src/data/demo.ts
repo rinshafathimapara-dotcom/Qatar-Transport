@@ -1,9 +1,9 @@
 import type { Collection } from "@/types/database";
 const meta = {
-  created_at: "2026-11-01T09:00:00Z",
   source: "Smarter Qatar synthetic demo fixture",
   is_demo: true,
 };
+const datedMeta = { ...meta, created_at: "2026-11-01T09:00:00Z" };
 export const demo: Collection = {
   places: [
     {
@@ -14,7 +14,7 @@ export const demo: Collection = {
       latitude: 25.2855,
       longitude: 51.5294,
       source_license: "Synthetic fixture; not a surveyed location",
-      ...meta,
+      ...datedMeta,
     },
     {
       id: "katara",
@@ -24,7 +24,7 @@ export const demo: Collection = {
       latitude: 25.3603,
       longitude: 51.526,
       source_license: "Synthetic fixture; not a surveyed location",
-      ...meta,
+      ...datedMeta,
     },
     {
       id: "souq",
@@ -34,7 +34,7 @@ export const demo: Collection = {
       latitude: 25.2885,
       longitude: 51.533,
       source_license: "Synthetic fixture; not a surveyed location",
-      ...meta,
+      ...datedMeta,
     },
     {
       id: "museum",
@@ -44,7 +44,7 @@ export const demo: Collection = {
       latitude: 25.2953,
       longitude: 51.539,
       source_license: "Synthetic fixture; not a surveyed location",
-      ...meta,
+      ...datedMeta,
     },
     {
       id: "lusail",
@@ -54,7 +54,7 @@ export const demo: Collection = {
       latitude: 25.407,
       longitude: 51.527,
       source_license: "Synthetic fixture; not a surveyed location",
-      ...meta,
+      ...datedMeta,
     },
   ],
   transport_stops: [
@@ -153,7 +153,7 @@ export const demo: Collection = {
       start_longitude: 51.5294,
       end_latitude: 25.2836,
       end_longitude: 51.528,
-      shade_level: 0.65,
+      shade_level: "partial (synthetic)",
       data_source: "Synthetic comfort illustration; not surveyed",
       is_demo: true,
     },
@@ -169,7 +169,7 @@ export const demo: Collection = {
       estimated_wait_minutes: null,
       price_pressure: "Possible upward pressure",
       confidence: null,
-      ...meta,
+      ...datedMeta,
     },
     {
       id: "d2",
@@ -181,7 +181,7 @@ export const demo: Collection = {
       estimated_wait_minutes: null,
       price_pressure: "Unverified",
       confidence: null,
-      ...meta,
+      ...datedMeta,
     },
   ],
   data_sources: [
@@ -193,7 +193,7 @@ export const demo: Collection = {
       description:
         "Approximate places, illustrative journeys and forecasts. Not official or suitable for navigation.",
       last_updated: "2026-11-01T09:00:00Z",
-      created_at: meta.created_at,
+      created_at: datedMeta.created_at,
     },
   ],
 };
