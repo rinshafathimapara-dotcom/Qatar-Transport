@@ -1,0 +1,37 @@
+# Complete source file structure
+
+```text
+smarter-qatar/
+  .env.example
+  .gitignore
+  README.md
+  docs/VALIDATION.md
+  docs/VENGEANCEUI-LICENSE.txt
+  next-env.d.ts
+  package-lock.json
+  package.json
+  postcss.config.mjs
+  public/images/doha.jpg
+  src/app/[section]/page.tsx
+  src/app/api/geocode/route.ts
+  src/app/api/walk/route.ts
+  src/app/error.tsx
+  src/app/globals.css
+  src/app/layout.tsx
+  src/app/not-found.tsx
+  src/app/page.tsx
+  src/components/location-search.tsx
+  src/components/map.tsx
+  src/components/mobility-app.tsx
+  src/components/ui/stagger-text.tsx
+  src/components/ui/stats-counter.tsx
+  src/data/demo.ts
+  src/lib/supabase-server.ts
+  src/lib/supabase.ts
+  src/services/data.ts
+  src/services/geo.ts
+  src/services/planner.ts
+  src/types/database.ts
+  tests/planner.test.ts
+  tsconfig.json
+```
