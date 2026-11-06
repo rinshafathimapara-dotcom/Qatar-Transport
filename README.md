@@ -100,7 +100,7 @@ Dependency installation, strict TypeScript, Next.js production build and planner
 
 ## GitHub (after reviewing locally)
 
-The local Git remote is configured as https://github.com/rinshafathimapara-dotcom/Qatar-Transport. Initial push was rejected with HTTP 403; source upload is pending GitHub integration write access. Clone after the push succeeds. `.gitignore` excludes environment files, dependencies and build output. Inspect staged files before future pushes.
+The project source is available at https://github.com/rinshafathimapara-dotcom/Qatar-Transport on the main branch. Clone this repository to open it in VS Code. `.gitignore` excludes environment files, dependencies and build output. Inspect staged files before future pushes.
 
 To clone and open the existing repository:
 

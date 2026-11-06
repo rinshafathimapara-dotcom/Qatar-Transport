@@ -12,4 +12,4 @@
 - No fake live metrics: demo counts derive from actual fixtures, routes and forecasts explicitly labelled, no availability counts in demo.
 - External VengeanceUI collage URL: returned HTTP 404. Local replacement implemented. Counter and stagger definitions inspected/adapted with MIT notice.
 - Image: Qatar skyline downloaded and Wikimedia licence/author checked.
-- No remote database writes, deployment or repository creation. Local Git remote points at the user-supplied empty Qatar-Transport repository. Git push rejected HTTP 403; nothing uploaded.
+- No remote database writes, deployment or repository creation. Application source pushed successfully to the user-supplied Qatar-Transport repository on main after GitHub access was updated. No application deployment.
