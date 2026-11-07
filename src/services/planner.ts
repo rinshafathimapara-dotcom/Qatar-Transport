@@ -1,3 +1,6 @@
+import { withFare } from "./fares";
+import type { FarePreferences } from "@/types/fares";
+import { drivingProvider, type DrivingProvider } from "./driving";
 import { withShade } from "./shade";
 import type {
   Collection,
@@ -18,10 +21,19 @@ export function rank(routes: Journey[], priority: Priority) {
         (b.minutes + (b.walking / 1000) * 3 + b.transfers * 5)
       );
     if (priority === "Shortest") return a.distance - b.distance;
-    if (priority === "Budget-friendly")
+    if (priority === "Budget-friendly") {
+      const quality = (r: Journey) =>
+        r.cost === null || !Number.isFinite(r.cost)
+          ? 2
+          : r.fare?.status === "indicative_estimate"
+            ? 1
+            : 0;
       return (
-        (a.cost ?? Infinity) - (b.cost ?? Infinity) || a.minutes - b.minutes
+        quality(a) - quality(b) ||
+        (a.cost ?? Infinity) - (b.cost ?? Infinity) ||
+        a.minutes - b.minutes
       );
+    }
     if (priority === "Most comfortable")
       return (
         (b.shadeInfo?.highPercent ?? -1) - (a.shadeInfo?.highPercent ?? -1) ||
@@ -40,6 +52,10 @@ export async function plan(
     walker?: WalkingProvider;
     maxWalkingMinutes?: number;
     shadeWeightMultiplier?: number;
+    farePreferences?: FarePreferences;
+    driver?: DrivingProvider;
+    includeTaxi?: boolean;
+    onDrivingUnavailable?: (reason: string) => void;
   } = {},
 ): Promise<Journey[]> {
   if (distance(from, to) < 30)
@@ -171,10 +187,54 @@ export async function plan(
           (candidate.isDemo
             ? "Transit durations are synthetic demonstration samples, not official timetables or upcoming departures. "
             : "Transit durations come from imported schedule samples, not upcoming departures. ") +
-          "Walking sections follow mapped pedestrian paths; supported rail geometry follows OSM track relations. Waiting time, fare and heat exposure are unknown. Any unverified segment geometry is hidden rather than joined with a straight line.",
+          (candidate.serviceCalendarKnown
+            ? ""
+            : "Service days/calendar are not supplied; these are static duration estimates, not available departures. ") +
+          "Walking sections follow mapped pedestrian paths; supported rail geometry follows OSM track relations. Waiting time and heat exposure are unknown. Fare references are calculated separately. Any unverified segment geometry is hidden rather than joined with a straight line.",
       });
     } catch {
       /* A missing access path cannot be replaced with a straight line. */
+    }
+  }
+  const driver =
+    options.includeTaxi === false
+      ? undefined
+      : (options.driver ?? (!options.walker ? drivingProvider : undefined));
+  if (driver) {
+    try {
+      const road = await driver.route(from, to);
+      if (road.available) {
+        results.push({
+          id: "karwa-taxi",
+          title: "Karwa Taxi",
+          minutes: road.minutes,
+          drivingMinutes: road.minutes,
+          distance: road.distance,
+          distanceMode: "driving",
+          walking: 0,
+          cost: null,
+          transfers: 0,
+          shade: null,
+          isDemo: demoMode || !!(from.is_demo || to.is_demo),
+          legs: [
+            {
+              mode: "taxi",
+              name: "Karwa Taxi · road route",
+              minutes: road.minutes,
+              distance: road.distance,
+              coordinates: road.coordinates,
+              geometry: "routed-driving",
+            },
+          ],
+          warning:
+            "Road distance and driving time come from the configured car router. Taxi fare uses indicative tariff assumptions and excludes unselected waiting/booking charges; it is not a live quote.",
+          source: road.source,
+        });
+      } else options.onDrivingUnavailable?.(road.reason);
+    } catch {
+      options.onDrivingUnavailable?.(
+        "Driving route unavailable. No pedestrian distance is substituted.",
+      );
     }
   }
   const limit = walkingLimit(options.maxWalkingMinutes);
@@ -187,7 +247,9 @@ export async function plan(
     throw new Error(
       `No supported pedestrian or transit connection was found. ${walkingError}`,
     );
-  return eligible.map((r) => withShade(r, data.shade_segments));
+  return eligible.map((r) =>
+    withFare(withShade(r, data.shade_segments), options.farePreferences),
+  );
 }
 
 export const walkingMinutes = (route: Journey) =>

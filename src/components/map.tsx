@@ -316,6 +316,7 @@ export default function MobilityMap({
           l.geometry === "routed" ||
           l.geometry === "verified-indoor" ||
           l.geometry === "mapped-transit" ||
+          l.geometry === "routed-driving" ||
           ((conceptOnly || showConceptRoute) && l.geometry === "concept"),
       )
       .forEach((l) => {
@@ -325,13 +326,15 @@ export default function MobilityMap({
             color:
               l.geometry === "verified-indoor" || l.environment === "indoor"
                 ? "#7652c5"
-                : l.mode === "walk"
-                  ? "#138879"
-                  : l.mode === "bus"
-                    ? "#2479c7"
-                    : l.mode === "tram"
-                      ? "#da9b21"
-                      : "#e75d4e",
+                : l.mode === "taxi"
+                  ? "#34505b"
+                  : l.mode === "walk"
+                    ? "#138879"
+                    : l.mode === "bus"
+                      ? "#2479c7"
+                      : l.mode === "tram"
+                        ? "#da9b21"
+                        : "#e75d4e",
             weight: 5,
             dashArray:
               l.geometry === "verified-indoor" || l.geometry === "concept"
@@ -726,6 +729,7 @@ export default function MobilityMap({
           <span style={{ color: "#2479c7" }}>● Bus</span>
           <span style={{ color: "#da9b21" }}>● Tram</span>
           <span style={{ color: "#7652c5" }}>● Indoor</span>
+          <span style={{ color: "#34505b" }}>● Taxi</span>
         </div>
       )}
       {(route?.isDemo ||

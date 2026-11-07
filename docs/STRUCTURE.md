@@ -107,3 +107,11 @@ Eye-level walking additions:
 - `src/services/walking-scene.ts`: progress/choice/exit state transitions and nearby-mall lookup.
 - `tests/walking-scene.test.ts`: state-machine and mall-proximity checks.
 - `docs/WALKING-VIEW.md`: controls, data boundaries and weather-loading changes.
+
+Fare additions:
+- `src/data/qatarTransportFares.ts`: central tariff references and verification metadata.
+- `src/types/fares.ts`, `src/services/fares.ts`: fare contexts, breakdowns, caps and ticket recommendations.
+- `src/services/driving.ts`, `src/app/api/drive/route.ts`: optional server-side driving adapter.
+- `src/components/fare-settings.tsx`, `fare-details.tsx`, `transport-fare-options.tsx`: existing-planner fare settings and displays.
+- `tests/fares.test.ts`, `tests/driving.test.ts`: tariff and shared-distance/provider-state verification.
+- `docs/FARES.md`: implementation report and source/credential limitations.

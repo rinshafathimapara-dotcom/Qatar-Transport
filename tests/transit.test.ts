@@ -61,3 +61,13 @@ test("backend priority vocabulary round-trips into existing controls", () => {
   assert.equal(normalizePriority("balanced"), "Balanced");
   assert.equal(normalizePriority("fastest"), "Fastest");
 });
+
+test("missing service calendars permit only labelled static duration estimates, not invented departure availability", () => {
+  const data = network();
+  data.transit_schedules.forEach((s) => (s.days_of_week = null));
+  const results = approximateTransit(demo.places[0], demo.places[1], data);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].serviceCalendarKnown, false);
+  assert.match(results[0].warning, /calendar validity/);
+  assert.equal(results[0].legs[1].minutes, 18);
+});

@@ -55,9 +55,7 @@ export function approximateTransit(
               (s) =>
                 s.route_id === route.id &&
                 s.from_stop_id === ordered[k].stop_id &&
-                s.to_stop_id === ordered[k + 1].stop_id &&
-                Array.isArray(s.days_of_week) &&
-                s.days_of_week.length > 0,
+                s.to_stop_id === ordered[k + 1].stop_id,
             )
             .map((s) => {
               const dep = timeMinutes(s.departure_time),
@@ -97,6 +95,11 @@ export function approximateTransit(
             to.is_demo
           ),
           isApproximate: true,
+          serviceCalendarKnown: data.transit_schedules
+            .filter((s) => s.route_id === route.id)
+            .every(
+              (s) => Array.isArray(s.days_of_week) && s.days_of_week.length > 0,
+            ),
           legs: [
             {
               mode: "walk",
@@ -123,7 +126,7 @@ export function approximateTransit(
             },
           ],
           warning:
-            "MVP approximation, not navigation or an upcoming departure. Station links and per-segment durations come from imported rows; sampled durations may belong to different services. Waiting time, service dates, day-of-week interpretation and access paths are unverified. Walking assumes 75 metres/minute along straight lines; distances are lower bounds. Fare and shade unknown.",
+            "MVP approximation, not navigation or an upcoming departure. Station links and per-segment durations come from imported rows; sampled durations may belong to different services. Waiting time, service dates, day-of-week interpretation and access paths are unverified. Walking assumes 75 metres/minute along straight lines; distances are lower bounds. Fare is calculated separately; shade unknown. Service calendar validity is not established by these duration samples.",
           source: route.source || "Imported transit rows",
         };
         if (!best || candidate.minutes < best.minutes) best = candidate;

@@ -94,3 +94,12 @@
 - No JavaScript page errors were reported. A playback-controls overlap found during testing was fixed before recording the final walkthrough.
 - `public/videos/eye-level-walk.mp4`: 20.64-second actual browser recording, approximately 594 KB. Generated scenery, mall access and movement remain explicitly simulated; it is not a physical access survey or GPS trace.
 - Final-build checks also passed the weather summary on `/walk` (29°C / feels-like 30.5°C), embedded MP4 metadata/playback availability (20.64 seconds), Escape-to-close and restoration of page scrolling. No JavaScript errors were reported.
+
+## Fare calculator update
+
+- All 15 test files passed. Fare cases cover Standard/Family/Gold, Tram restrictions, single/day/weekly products, one-time cards, daily capping, verified <=30-minute rail interchange and unknown/ineligible transfers, ordinary bus unavailability, explicitly eligible Metrolink, taxi daytime/night/outside/airport/minimum/optional charges, missing/non-driving distance, rounding and ticket recommendations.
+- The driving adapter's unavailable state was verified without credentials; a controlled adapter test verified that the same 8,000 m feeds journey summary, taxi leg and QAR 16.80 estimate. No walking/straight-line substitute was used.
+- All 16 existing public Supabase dataset queries succeeded. No schema, RLS, staging or user records were changed. Missing service calendars now permit only labelled static schedule-duration estimates; missing forward edges/durations still cannot produce a route.
+- Actual Supabase-backed browser search displayed QAR 2.00 on an imported Metro result. Gold QAR 10.00, Gold day QAR 30.00, Standard day QAR 6.00, weekly QAR 40.00, capped incremental QAR 0.00, separate card purchase and unavailable bus cases passed. Desktop and 390px mobile layouts passed without horizontal overflow or invalid QAR NaN/undefined text.
+- A separate, explicitly controlled driving-distance UI fixture passed daytime QAR 16.80, night QAR 19.20, airport QAR 37.80 and selected waiting QAR 45.80 checks. This was not a connected live driving/quote provider. Both browser runs reported no JavaScript page errors.
+- Production build and TypeScript checks passed. Source-verification limits and optional driving-provider setup are documented in docs/FARES.md; current rail policy validity, current bus/taxi tariffs and live ride-hailing quotes are not certified.

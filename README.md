@@ -154,3 +154,7 @@ Open **City conditions** (`/conditions`) for the connected weather/heat referenc
 ### Eye-level walking
 
 Click a walking line on a journey map to open the new first-person walking scene. Or open **Walking experience** (`/walk`) for the City Center approach, mall decision, indoor corridor and exit flow. Generated gray buildings and shadow shapes illustrate the walk; a compact simulation label distinguishes it from GPS or street imagery. Weather/heat references now load independently and also appear beside the map. See [walking-view instructions](docs/WALKING-VIEW.md).
+
+### Fares and tickets
+
+Journey cards now show QAR fares with published-reference / indicative / unavailable status and a breakdown. Choose Standard, Family or Gold, single/day/weekly products, reusable-card capping and optional new-card purchase in the existing planner. Karwa estimates use an optional driving router; without one, they remain unavailable rather than using walking distance. Bus card references are separate from unknown ordinary bus fares, and other ride-hailing services need actual quotes. See [fare calculations, sources, verification limits and driving setup](docs/FARES.md).

@@ -3225,3 +3225,223 @@ button:disabled {
   margin: 12px 0;
   border-radius: 8px;
 }
+.fare-settings {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 18px 0;
+  color: #173d50;
+}
+.fare-settings-main {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+.fare-settings label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  min-width: 0;
+}
+.fare-settings select,
+.fare-settings input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #c9d6ce;
+  background: #fafcf8;
+  color: #173d50;
+  border-radius: 6px;
+  min-width: 0;
+}
+.fare-settings details {
+  margin-top: 15px;
+}
+.fare-settings summary,
+.fare-breakdown summary,
+.additional-fares summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 13px;
+  padding: 9px 0;
+}
+.fare-settings details > .fare-settings-main {
+  margin: 12px 0;
+}
+.fare-settings .fare-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+.fare-checkbox input {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  accent-color: #17816c;
+}
+.ticket-suggestion {
+  padding: 12px;
+  background: #eef6ed;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.fare-settings h3 {
+  margin: 20px 0 14px;
+  font-size: 18px;
+}
+.fare-breakdown {
+  background: #fff;
+  padding: 22px;
+  border-radius: 10px;
+  margin: 12px 0 18px;
+  color: #173d50;
+}
+.fare-breakdown-heading {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+}
+.fare-breakdown-heading h3 {
+  font-size: 32px;
+  margin: 9px 0;
+}
+.fare-breakdown > p {
+  font-size: 14px;
+}
+.fare-breakdown dl {
+  margin: 14px 0;
+}
+.fare-breakdown dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding: 9px 0;
+  border-bottom: 1px solid #eef2ee;
+}
+.fare-breakdown dd {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.fare-breakdown details p {
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+.fare-breakdown details a {
+  display: block;
+  font-size: 12px;
+  color: #147966;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.fare-card-purchase {
+  background: #f9f1de;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.fare-ticket-label {
+  font-size: 12px;
+  margin: 8px 0;
+  color: #497061;
+}
+.fare-lowest {
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  color: #18765f;
+  margin: 10px 0;
+}
+.additional-fares {
+  background: #fff;
+  padding: 24px;
+  border-radius: 10px;
+  margin: 24px 0;
+  color: #173d50;
+}
+.additional-fares h2 {
+  font-size: 25px;
+  margin-bottom: 20px;
+}
+.additional-fare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.additional-fare-grid article {
+  background: #f5f8f3;
+  padding: 18px;
+  border-radius: 8px;
+  min-width: 0;
+}
+.additional-fare-grid h3 {
+  font-size: 20px;
+  margin: 13px 0;
+}
+.additional-fare-grid strong {
+  font-size: 18px;
+}
+.additional-fare-grid p,
+.additional-fare-grid li {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 12px 0;
+}
+.additional-fare-grid a {
+  font-size: 13px;
+  color: #147966;
+}
+.route-metrics > span {
+  max-width: 56%;
+  overflow-wrap: anywhere;
+}
+.route-metrics > span > small {
+  line-height: 1.6;
+}
+.leg-icon.taxi {
+  background: #e7ecef;
+  color: #34505b;
+}
+@media (max-width: 750px) {
+  .fare-settings-main,
+  .additional-fare-grid {
+    grid-template-columns: 1fr;
+  }
+  .fare-breakdown-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .fare-settings,
+  .fare-breakdown,
+  .additional-fares {
+    padding: 17px;
+  }
+  .fare-breakdown dd {
+    white-space: normal;
+  }
+  .fare-breakdown-heading h3 {
+    font-size: 28px;
+  }
+}
+.fare-breakdown dl {
+  display: block;
+}
+.route-metrics > span {
+  font-size: 21px;
+  font-weight: 650;
+}
+.route-metrics > span > small {
+  font-size: 11px;
+  font-weight: 400;
+}
+.fare-policy-reference {
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 15px;
+  color: #416957;
+}

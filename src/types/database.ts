@@ -169,15 +169,27 @@ export type Location = {
 export type Priority =
   "Balanced" | "Fastest" | "Shortest" | "Most comfortable" | "Budget-friendly";
 export type Leg = {
-  mode: "walk" | "metro" | "tram" | "bus";
+  mode: "walk" | "metro" | "tram" | "bus" | "taxi";
   name: string;
   minutes: number;
   distance: number;
   coordinates: [number, number][];
   routeName?: string;
   routeCode?: string;
+  fareConnection?: {
+    previousLegIndex: number;
+    minutes: number;
+    verifiedInterchange: boolean;
+    sourceUrl: string;
+  };
+  fareEligibility?: { metrolink: boolean; sourceUrl: string };
   geometry?:
-    "routed" | "verified-indoor" | "mapped-transit" | "schematic" | "concept";
+    | "routed"
+    | "verified-indoor"
+    | "mapped-transit"
+    | "schematic"
+    | "concept"
+    | "routed-driving";
   environment?: "outdoor" | "indoor";
   instructions?: WalkingInstruction[];
 };
@@ -211,6 +223,10 @@ export type Journey = {
   distance: number;
   walking: number;
   cost: number | null;
+  fare?: import("./fares").FareResult;
+  distanceMode?: "driving" | "walking" | "mixed";
+  drivingMinutes?: number;
+  serviceCalendarKnown?: boolean;
   transfers: number;
   shade: number | null;
   shadeInfo?: import("@/services/shade").ShadeSummary;

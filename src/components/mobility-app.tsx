@@ -1,4 +1,9 @@
 "use client";
+import FareSettings from "./fare-settings";
+import FareDetails from "./fare-details";
+import TransportFareOptions from "./transport-fare-options";
+import { withFare, money, fareStatusLabel } from "@/services/fares";
+import { defaultFarePreferences, type FarePreferences } from "@/types/fares";
 import MobilityInsights from "./mobility-insights";
 import {
   emptyMobilityContext,
@@ -13,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   ArrowRight,
+  Car,
   ArrowUpRight,
   ArrowDownUp,
   TrainFront,
@@ -108,6 +114,10 @@ export default function MobilityApp({
 }) {
   const router = useRouter(),
     reduced = useReducedMotion();
+  const [farePrefs, setFarePrefs] = useState<FarePreferences>(
+    defaultFarePreferences,
+  );
+  const [drivingReason, setDrivingReason] = useState("");
   const [includeDemo, setIncludeDemo] = useState(true);
   const [city, setCity] = useState<MobilityContext>(emptyMobilityContext);
   const cityRequest = useRef(0);
@@ -291,8 +301,18 @@ export default function MobilityApp({
     const t = setTimeout(() => setMessage(""), 9000);
     return () => clearTimeout(t);
   }, [message]);
+  const pricedRoutes = routes.map((r) => withFare(r, farePrefs));
+  const knownFares = pricedRoutes.filter(
+    (r) =>
+      r.fare?.amount !== null &&
+      r.fare?.amount !== undefined &&
+      ["free", "published_reference"].includes(r.fare.status),
+  );
+  const lowestKnown = knownFares.length
+    ? Math.min(...knownFares.map((r) => r.fare!.amount!))
+    : null;
   const sorted = rank(
-      routes.filter(
+      pricedRoutes.filter(
         (r) => walkingMinutes(r) <= walkingLimit(prefs.max_walking_minutes),
       ),
       priority,
@@ -314,12 +334,15 @@ export default function MobilityApp({
   async function search() {
     if (!data) return;
     setBusy(true);
+    setDrivingReason("");
     setRoutes([]);
     setPresentationShade(null);
     try {
       const result = await plan(from, to, data, isDemo, {
         maxWalkingMinutes: prefs.max_walking_minutes,
         shadeWeightMultiplier: weather?.shade_weight_multiplier ?? 1,
+        farePreferences: farePrefs,
+        onDrivingUnavailable: setDrivingReason,
       });
       setRoutes(result);
       setSelected(rank(result, priority)[0]?.id || "");
@@ -1072,6 +1095,7 @@ export default function MobilityApp({
             {(current === "plan" || current === "comfort") && (
               <>
                 {planner}
+                <FareSettings value={farePrefs} onChange={setFarePrefs} />
                 {insights("weather")}
                 <div className="priority-row">
                   <span>Your priority</span>
@@ -1181,21 +1205,38 @@ export default function MobilityApp({
                               <small> min</small>
                             </strong>
                             <span>
-                              {r.cost === null
-                                ? "Fare not supplied"
-                                : r.cost === 0
-                                  ? "Free"
-                                  : `QAR ${r.cost}`}
+                              {money(r.fare?.amount)}
                               <small>
-                                {(r.distance / 1000).toFixed(1)} km total
+                                {r.fare
+                                  ? r.fare.status === "unavailable"
+                                    ? "Unavailable · QAR"
+                                    : fareStatusLabel(r.fare.status)
+                                  : "Unavailable · QAR"}
+                              </small>
+                              <small>
+                                {Number.isFinite(r.distance) && r.distance > 0
+                                  ? `${(r.distance / 1000).toFixed(1)} km total`
+                                  : "Distance unavailable"}
                               </small>
                             </span>
                           </div>
+                          <p className="fare-ticket-label">{r.fare?.ticket}</p>
+                          {r.fare?.amount !== null &&
+                            r.fare?.amount === lowestKnown &&
+                            ["free", "published_reference"].includes(
+                              r.fare.status,
+                            ) && (
+                              <span className="fare-lowest">
+                                Lowest known fare among these results
+                              </span>
+                            )}
                           <div className="route-modes">
                             {r.legs.map((l, j) => (
                               <span key={j}>
                                 {l.mode === "walk" ? (
                                   <Footprints size={17} />
+                                ) : l.mode === "taxi" ? (
+                                  <Car size={17} />
                                 ) : (
                                   <TrainFront size={17} />
                                 )}
@@ -1292,7 +1333,8 @@ export default function MobilityApp({
                         </>
                       )}
                     </div>
-                    {route && (
+                    {route?.fare && <FareDetails fare={route.fare} />}
+                    {route?.legs.some((l) => l.mode === "walk") && (
                       <details className="walking-location-details">
                         <summary>Walking directions & live location</summary>{" "}
                         <WalkingAssistant
@@ -1359,6 +1401,8 @@ export default function MobilityApp({
                               <span className={"leg-icon " + l.mode}>
                                 {l.mode === "walk" ? (
                                   <Footprints size={18} />
+                                ) : l.mode === "taxi" ? (
+                                  <Car size={18} />
                                 ) : (
                                   <TrainFront size={18} />
                                 )}
@@ -1384,6 +1428,14 @@ export default function MobilityApp({
                   </div>
                 </div>
               </>
+            )}
+            {(current === "plan" || current === "comfort") && (
+              <TransportFareOptions
+                hasTaxi={pricedRoutes.some((r) =>
+                  r.legs.some((l) => l.mode === "taxi"),
+                )}
+                drivingReason={drivingReason}
+              />
             )}
             {current === "conditions" && insights("all")}
             {current === "explore" && (
@@ -1647,6 +1699,7 @@ export default function MobilityApp({
                                   const r = await plan(p, to, data, false, {
                                     maxWalkingMinutes:
                                       prefs.max_walking_minutes,
+                                    includeTaxi: false,
                                   });
                                   setRoutes(r);
                                   setSelected(r[0]?.id || "");
