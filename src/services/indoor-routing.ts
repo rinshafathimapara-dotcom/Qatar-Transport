@@ -94,6 +94,8 @@ export async function choosePassage(
   ];
   return {
     ...route,
+    shade: null,
+    shadeInfo: undefined,
     legs,
     minutes: legs.reduce((n, l) => n + l.minutes, 0),
     distance: legs.reduce((n, l) => n + l.distance, 0),

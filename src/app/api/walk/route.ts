@@ -1,9 +1,20 @@
+import {
+  shadeSlices,
+  shadeLevel,
+  type ShadeObservation,
+} from "@/services/shade";
 import { NextResponse } from "next/server";
 import { getWalkingNetwork } from "@/lib/walking-network.server";
 export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
-    const { from, to, avoidPolygons = [] } = await req.json();
+    const {
+      from,
+      to,
+      avoidPolygons = [],
+      preferShade = false,
+      shadeSegments = [],
+    } = await req.json();
     const valid = (p: { latitude: number; longitude: number }) =>
       p &&
       Number.isFinite(p.latitude) &&
@@ -37,7 +48,35 @@ export async function POST(req: Request) {
         { error: "Invalid building boundary." },
         { status: 400 },
       );
+    if (
+      typeof preferShade !== "boolean" ||
+      !Array.isArray(shadeSegments) ||
+      shadeSegments.length > 2000 ||
+      shadeSegments.some(
+        (s) =>
+          !s ||
+          !valid({
+            latitude: s.start_latitude,
+            longitude: s.start_longitude,
+          }) ||
+          !valid({ latitude: s.end_latitude, longitude: s.end_longitude }) ||
+          typeof s.is_demo !== "boolean" ||
+          typeof s.shade_level !== "string",
+      )
+    )
+      return NextResponse.json(
+        { error: "Invalid shade observations." },
+        { status: 400 },
+      );
     if (process.env.GRAPHHOPPER_URL) {
+      if (preferShade)
+        return NextResponse.json(
+          {
+            error:
+              "The configured external adapter does not support shade weighting.",
+          },
+          { status: 501 },
+        );
       if (avoidPolygons.length)
         return NextResponse.json(
           {
@@ -75,7 +114,33 @@ export async function POST(req: Request) {
       });
     }
     const graph = await getWalkingNetwork();
-    return NextResponse.json(graph.route(from, to, avoidPolygons));
+    const cache = new Map<number, number>();
+    const penalty =
+      preferShade && shadeSegments.length
+        ? (id: number) => {
+            if (cache.has(id)) return cache.get(id)!;
+            const e = graph.data.edges[id],
+              slices = shadeSlices(
+                [graph.data.nodes[e[0]], graph.data.nodes[e[1]]],
+                shadeSegments as ShadeObservation[],
+              );
+            const total = slices.reduce((n, s) => n + s.metres, 0);
+            const value = total
+              ? slices.reduce(
+                  (n, s) =>
+                    n +
+                    s.metres *
+                      { high: 1, medium: 2, low: 3, unknown: 3 }[
+                        shadeLevel(s.row?.shade_level)
+                      ],
+                  0,
+                ) / total
+              : 3;
+            cache.set(id, value);
+            return value;
+          }
+        : undefined;
+    return NextResponse.json(graph.route(from, to, avoidPolygons, penalty));
   } catch (error) {
     return NextResponse.json(
       {

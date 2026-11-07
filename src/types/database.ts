@@ -208,6 +208,7 @@ export type Journey = {
   cost: number | null;
   transfers: number;
   shade: number | null;
+  shadeInfo?: import("@/services/shade").ShadeSummary;
   isDemo: boolean;
   isApproximate?: boolean;
   legs: Leg[];

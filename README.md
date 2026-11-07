@@ -140,3 +140,9 @@ Never commit `.env.local` or service-role keys. Pushing source to GitHub does no
 ### Interactive walking presentation
 
 Open `/demo` to show the judges an accelerated walking journey with an automatic mall decision point, clickable E? entrance, through/around branches and an arrival state. All demo paths and doors are visibly labelled hypothetical; this page does not use GPS. See [the demo guide](docs/WALKING-DEMO.md). Real route planning now caps total walking at 20 minutes (15-minute option available), with expanded walking directions and opt-in **Start my journey** GPS tracking.
+
+### Shade overlay and comparison
+
+Open **Comfortable routes** (`/comfort`) to compare two local synthetic-shade presentations on actual mapped walking geometry. Click a route to show it on the existing map; use **Hide/Show shade overlay** to toggle high/medium/low/unknown colours. In connected mode, **Include demo records** exposes Supabase records that are marked synthetic. Route cards distinguish categorical spatial matches from numeric synthetic-model percentages. See [shade integration and the backend handoff](docs/SHADE-INTEGRATION.md) for calculation details and remaining verified-data requirements.
+
+The journey planner (`/plan`) now uses an original AI-generated Doha-inspired sunset background, stored locally at `public/images/planner-sunset.jpg`. It is decorative artwork, not geographic data. The home video is preserved.

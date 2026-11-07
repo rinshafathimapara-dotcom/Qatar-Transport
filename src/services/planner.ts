@@ -1,3 +1,4 @@
+import { withShade } from "./shade";
 import type {
   Collection,
   Journey,
@@ -22,7 +23,11 @@ export function rank(routes: Journey[], priority: Priority) {
         (a.cost ?? Infinity) - (b.cost ?? Infinity) || a.minutes - b.minutes
       );
     if (priority === "Most comfortable")
-      return (b.shade ?? -1) - (a.shade ?? -1) || a.walking - b.walking;
+      return (
+        (b.shadeInfo?.highPercent ?? -1) - (a.shadeInfo?.highPercent ?? -1) ||
+        (b.shade ?? -1) - (a.shade ?? -1) ||
+        a.walking - b.walking
+      );
     return a.minutes - b.minutes;
   });
 }
@@ -64,6 +69,36 @@ export async function plan(
     });
   } catch (error) {
     walkingError = (error as Error).message;
+  }
+  if (
+    results[0] &&
+    results[0].minutes <= walkingLimit(options.maxWalkingMinutes) &&
+    data.shade_segments.length
+  ) {
+    try {
+      const w = await walker.route(from, to, {
+        preferShade: true,
+        shadeSegments: data.shade_segments,
+      });
+      if (
+        JSON.stringify(w.coordinates) !==
+        JSON.stringify(results[0].legs[0].coordinates)
+      )
+        results.push({
+          ...results[0],
+          id: "walking-shade",
+          title: "Shade-priority walking alternative",
+          minutes: w.minutes,
+          distance: w.distance,
+          walking: w.distance,
+          legs: [{ ...results[0].legs[0], ...w }],
+          warning:
+            results[0].warning +
+            " Categorical shade weighting favours high-shade observations; this is an estimate, not measured heat protection or a guarantee of maximum shade.",
+        });
+    } catch {
+      /* Keep the supported standard route if shade routing is unavailable. */
+    }
   }
   for (const candidate of approximateTransit(from, to, data).slice(0, 3)) {
     try {
@@ -147,7 +182,7 @@ export async function plan(
     throw new Error(
       `No supported pedestrian or transit connection was found. ${walkingError}`,
     );
-  return eligible;
+  return eligible.map((r) => withShade(r, data.shade_segments));
 }
 
 export const walkingMinutes = (route: Journey) =>

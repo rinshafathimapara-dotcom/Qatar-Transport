@@ -65,3 +65,12 @@
 - All ten application pages returned HTTP 200, including `/demo`.
 - Recording: `public/videos/walking-journey-demo.mp4`, ~2.75 MB. This is a simulated presentation, not field validation.
 - Real GPS accuracy, indoor access and positioning have not been field-tested. The live reviewed-passage registry remains empty. Supabase data and RLS were not changed by this update.
+
+## Shade integration and planner artwork update
+
+- Public Supabase reads succeeded for all ten shared dataset tables. 317 shade records are visible; none are visible with `is_demo=false`. Places and stops also have zero visible non-demo rows. This is reflected in the data-view messaging and explicit demo toggle.
+- Optional `demo_shade_routes` returned `PGRST205`; the UI explains this and retains the working local presentation.
+- Tests cover distance-weighted shade modelling, unknown/categorical-only coverage, crossings, duplicate/conflicting observations, synthetic-route validation, weighted graph distance and walking-budget preservation.
+- Production-app browser checks passed: local alternative selection, shade-overlay toggle, optional-table error handling, generated planner background, desktop and 390px mobile layouts without horizontal overflow. No JavaScript page errors were reported.
+- Actual `/api/walk` check: standard route 9 minutes / 664 m; shade-weighted alternative 11 minutes / 801 m using the synthetic fixture on the connected OSM graph. No invented straight-line connection was used.
+- No backend writes, migrations, RLS changes, private-data changes or deployment were performed. Verified numeric shade coverage, survey validation and time-dependent shade remain unavailable.

@@ -87,3 +87,14 @@ test("bundled museum journey uses a substantial mapped pedestrian path around th
   assert.ok(r.instructions.length > 1);
   assert.ok(r.snappedFrom < 150 && r.snappedTo < 150);
 });
+
+test("shade weighting chooses a longer connected path without changing reported physical distance", () => {
+  const graph = new PedestrianGraph(network()),
+    a = loc(51.53, 25.28),
+    b = loc(51.532, 25.28);
+  const direct = graph.route(a, b),
+    shaded = graph.route(a, b, [], (id) => (id < 2 ? 4 : 1));
+  assert.ok(shaded.coordinates.some((p) => p[1] > 25.2805));
+  assert.ok(shaded.distance > direct.distance);
+  assert.ok(shaded.distance < 500);
+});

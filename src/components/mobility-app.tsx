@@ -1,4 +1,5 @@
 "use client";
+import ShadeDemoPanel from "./shade-demo-panel";
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -102,6 +103,9 @@ export default function MobilityApp({
   const router = useRouter(),
     reduced = useReducedMotion();
   const [includeDemo, setIncludeDemo] = useState(false);
+  const [presentationShade, setPresentationShade] = useState<
+    import("@/services/shade").ShadeObservation[] | null
+  >(null);
   const [livePosition, setLivePosition] = useState<LiveFix | null>(null);
   const [selectedPassage, setSelectedPassage] = useState<string | null>(null);
   const [data, setData] = useState<Collection | null>(null),
@@ -261,6 +265,7 @@ export default function MobilityApp({
     if (!data) return;
     setBusy(true);
     setRoutes([]);
+    setPresentationShade(null);
     try {
       const result = await plan(from, to, data, isDemo, {
         maxWalkingMinutes: prefs.max_walking_minutes,
@@ -574,10 +579,15 @@ export default function MobilityApp({
   );
   const mapArea = data ? (
     <Map
-      data={data}
+      data={
+        presentationShade
+          ? { ...data, shade_segments: presentationShade }
+          : data
+      }
       from={from}
       to={to}
       route={route}
+      showConceptRoute={!!presentationShade}
       livePosition={livePosition}
       passages={route ? relevantPassages(route, indoorPassages) : []}
       selectedPassage={selectedPassage}
@@ -722,7 +732,9 @@ export default function MobilityApp({
               : dataError
                 ? "BACKEND NEEDS ATTENTION"
                 : data
-                  ? "CONNECTED TO SUPABASE"
+                  ? includeDemo
+                    ? "SUPABASE · DEMO RECORDS INCLUDED"
+                    : "CONNECTED TO SUPABASE"
                   : "CONNECTING TO SUPABASE"}
           </span>
           <p>
@@ -736,6 +748,7 @@ export default function MobilityApp({
               aria-pressed={includeDemo}
               onClick={() => {
                 setIncludeDemo(!includeDemo);
+                setPresentationShade(null);
                 setRoutes([]);
               }}
             >
@@ -760,15 +773,14 @@ export default function MobilityApp({
               <Info size={22} />
               <div>
                 <strong>
-                  Supabase connected · no destinations or stops returned
+                  Supabase connected · no destinations in this data view
                 </strong>
                 <p>
-                  The public query returned no destination or station records.
-                  Your teammate should check whether data has been imported and
-                  whether the public read policies allow access. Demo places
-                  have not been substituted. Map selection still works; real
-                  walking uses the bundled Doha pilot network when your points
-                  are covered.
+                  No destinations or stops match the current data filter.
+                  Demo-labelled records are hidden by default; try “Include demo
+                  records” above. If the view stays empty, check imports and
+                  public read policies. Map selection and walking within the
+                  Doha pilot remain available.
                 </p>
               </div>
             </div>
@@ -959,7 +971,9 @@ export default function MobilityApp({
           </>
         )}
         {current !== "home" && (
-          <div className="interior">
+          <div
+            className={`interior ${current === "plan" ? "planner-dashboard" : ""}`}
+          >
             <div className="page-heading">
               <span className="eyebrow">YOUR CITY, CONNECTED</span>
               <h1>
@@ -1030,7 +1044,7 @@ export default function MobilityApp({
                       <TrainFront size={22} />
                       <div>
                         <strong>
-                          Transit planning needs more readable data
+                          Transit planning needs connected data in this view
                         </strong>
                         <p>
                           Loaded {data.transport_stops.length} stops,{" "}
@@ -1038,7 +1052,8 @@ export default function MobilityApp({
                           {data.transit_route_stops.length} route links and{" "}
                           {data.transit_schedules.length} schedules. The MVP
                           needs all four, with matching IDs and forward stop
-                          order. Your teammate should check imports and read
+                          order. Demo records may be hidden; use the toggle
+                          above. Your teammate should check imports and read
                           policies. Walking uses the bundled Doha pilot network;
                           external providers are optional.
                         </p>
@@ -1046,18 +1061,33 @@ export default function MobilityApp({
                     </div>
                   )}
                 {current === "comfort" && (
+                  <ShadeDemoPanel
+                    maxWalkingMinutes={walkingLimit(prefs.max_walking_minutes)}
+                    onShow={(a, b, r, segments) => {
+                      setPresentationShade(segments);
+                      setFrom(a);
+                      setTo(b);
+                      setRoutes([r]);
+                      setSelected(r.id);
+                      notify(
+                        "Synthetic shade demonstration selected. Review the map and source labels below.",
+                      );
+                    }}
+                  />
+                )}
+                {current === "comfort" && (
                   <div className="info-box">
                     <Sun size={22} />
                     <div>
                       <strong>
                         {isDemo
                           ? "Comfort comparison · demonstration"
-                          : "Shade coverage is not yet validated"}
+                          : "Shade observations · spatial estimate"}
                       </strong>
                       <p>
                         {isDemo
-                          ? "Walking now follows mapped roads and paths. Preview the indoor-choice concept below, or use reviewed public passages when supplied. No shade percentage or heat-protection guarantee is invented."
-                          : "Imported shade segments need a validated spatial matching adapter before comfort can be scored. Walking results show shade as unknown."}
+                          ? "Walking follows mapped roads and paths. The shade presentation above uses explicitly synthetic labels and a documented coverage model; it does not measure heat protection."
+                          : `${data?.shade_segments.length ?? 0} shade segments loaded in the current data mode. Switch on Shade overlay on the map. High/medium/low labels are spatially matched to walking paths; numeric percentages stay unknown without numeric coverage. Enable demo records to inspect supplied synthetic observations.`}
                       </p>
                     </div>
                   </div>
@@ -1150,10 +1180,35 @@ export default function MobilityApp({
                                 : "Outdoor walking · shade unverified"}
                             </span>
                           </div>
+                          {r.shadeInfo && (
+                            <div className="shade-card-indicator">
+                              <Sun size={15} />
+                              <span>
+                                {r.shadeInfo.highPercent}% of walk matched to
+                                high-shade labels ·{" "}
+                                {r.shadeInfo.observedPercent}% observed
+                                {r.shadeInfo.synthetic
+                                  ? " · SYNTHETIC"
+                                  : " · categorical estimate"}
+                              </span>
+                            </div>
+                          )}
+                          {r.id === "walking-shade" &&
+                            routes.find((a) => a.id === "walking") && (
+                              <p className="data-note">
+                                {r.minutes -
+                                  (routes.find((a) => a.id === "walking")
+                                    ?.minutes ?? r.minutes)}{" "}
+                                min difference from the standard walking route ·
+                                categorical shade preference
+                              </p>
+                            )}
                           <div className="route-sub">
                             {(r.walking / 1000).toFixed(1)} km walking ·{" "}
                             {r.transfers} transfers
-                            {r.shade !== null && ` · ${r.shade}% demo shade`}
+                            {r.shade !== null
+                              ? ` · ${r.shade}% synthetic model shade`
+                              : " · shade % unknown"}
                           </div>
                         </button>
                       ))

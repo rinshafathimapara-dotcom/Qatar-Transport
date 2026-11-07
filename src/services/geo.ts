@@ -45,7 +45,11 @@ export interface WalkingProvider {
   route(
     from: Location,
     to: Location,
-    options?: { avoidPolygons?: [number, number][][] },
+    options?: {
+      avoidPolygons?: [number, number][][];
+      preferShade?: boolean;
+      shadeSegments?: import("./shade").ShadeObservation[];
+    },
   ): Promise<WalkingResult>;
 }
 export const walkingProvider: WalkingProvider = {

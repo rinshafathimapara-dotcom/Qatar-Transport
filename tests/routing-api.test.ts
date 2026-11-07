@@ -58,3 +58,32 @@ test("unknown rail geometry cannot become a straight line", async () => {
   );
   assert.equal(response.status, 422);
 });
+
+test("shade-aware walking API uses connected road geometry and reports physical walking time", async () => {
+  const fixture = (await import("../src/data/shade-presentation.json")).default;
+  const base = await walk(request({ from: fixture.from, to: fixture.to }));
+  const standard = await base.json();
+  const weighted = await walk(
+    request({
+      from: fixture.from,
+      to: fixture.to,
+      preferShade: true,
+      shadeSegments: fixture.segments,
+    }),
+  );
+  assert.equal(weighted.status, 200);
+  const alternate = await weighted.json();
+  assert.notDeepEqual(alternate.coordinates, standard.coordinates);
+  assert.ok(alternate.distance > standard.distance);
+  assert.ok(alternate.minutes <= 20);
+  assert.equal(alternate.minutes, Math.ceil(alternate.distance / 75));
+  const invalid = await walk(
+    request({
+      from: fixture.from,
+      to: fixture.to,
+      preferShade: true,
+      shadeSegments: [{ is_demo: true }],
+    }),
+  );
+  assert.equal(invalid.status, 400);
+});

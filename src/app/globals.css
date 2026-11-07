@@ -2426,3 +2426,155 @@ button:disabled {
   max-height: 75vh;
   margin-bottom: 12px;
 }
+
+/* Original generated artwork decorates the planner; the geographic map remains interactive. */
+.planner-dashboard {
+  position: relative;
+  isolation: isolate;
+  max-width: none;
+  padding-left: max(4.6%, calc((100vw - 1280px) / 2));
+  padding-right: max(4.6%, calc((100vw - 1280px) / 2));
+  min-height: calc(100vh - 130px);
+  background: #e7efe9 url("/images/planner-sunset.jpg") center top/cover fixed
+    no-repeat;
+}
+.planner-dashboard .page-heading {
+  padding-top: 24px;
+  padding-bottom: 28px;
+  max-width: 760px;
+}
+.planner-dashboard .page-heading h1,
+.planner-dashboard .page-heading p,
+.planner-dashboard .page-heading .eyebrow {
+  color: white;
+  text-shadow: 0 2px 12px #0b303de0;
+}
+.planner-dashboard .planner-form {
+  background: #fff;
+  padding: 22px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px #11323a20;
+}
+.planner-dashboard .priority-row {
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+.planner-dashboard .route-options > .empty-state,
+.planner-dashboard .pick-controls {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+}
+.planner-dashboard .walking-assistant,
+.planner-dashboard .journey-detail {
+  background: #fff;
+}
+.shade-demo-panel {
+  background: #fff;
+  padding: 24px;
+  margin: 20px 0;
+  border-radius: 12px;
+  box-shadow: 0 5px 25px #173d500a;
+}
+.shade-demo-panel h2 {
+  font-size: 26px;
+  margin: 12px 0;
+}
+.shade-demo-panel p {
+  line-height: 1.6;
+  max-width: 850px;
+}
+.shade-demo-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 20px 0;
+}
+.shade-demo-option {
+  display: grid;
+  gap: 9px;
+  text-align: left;
+  padding: 18px;
+  background: #edf6f0;
+  color: #173d50;
+  border: 1px solid #c4dbce;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.shade-demo-option:hover {
+  background: #dfefe5;
+}
+.shade-demo-option strong {
+  font-size: 18px;
+}
+.shade-demo-option span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #117968;
+  font-weight: 700;
+}
+.shade-demo-panel details summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 12px 0;
+}
+.shade-card-indicator {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: #17745c;
+  padding-top: 8px;
+}
+.map-shade-controls {
+  position: absolute;
+  left: 14px;
+  top: 66px;
+  z-index: 500;
+  max-width: calc(100% - 78px);
+  background: white;
+  border-radius: 7px;
+  box-shadow: 0 2px 12px #173d5020;
+  padding: 9px 11px;
+}
+.map-shade-controls button {
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #173d50;
+}
+.shade-legend {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  max-width: 310px;
+  padding-top: 7px;
+}
+.shade-legend small {
+  width: 100%;
+  font-size: 10px;
+  color: #526673;
+}
+@media (max-width: 700px) {
+  .planner-dashboard {
+    background-attachment: scroll;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .planner-dashboard .planner-form {
+    padding: 14px;
+  }
+  .shade-demo-options {
+    grid-template-columns: 1fr;
+  }
+  .shade-demo-panel {
+    padding: 18px;
+  }
+  .planner-dashboard .page-heading {
+    padding-top: 20px;
+  }
+}

@@ -82,3 +82,12 @@ Walking presentation additions:
 - `tests/journey-simulation.test.ts`: deterministic simulation checks.
 - `public/videos/walking-journey-demo.mp4`: actual browser recording, with simulated movement.
 - `docs/WALKING-DEMO.md`: presentation instructions and survey requirements.
+
+Shade additions:
+- `src/services/shade.ts`: conservative geometry matching, categories and weighted synthetic coverage.
+- `src/services/shade-demo.ts`: validated optional teammate demo-table adapter.
+- `src/components/shade-demo-panel.tsx`: local and supplied shade demonstrations in Comfortable routes.
+- `src/data/shade-presentation.json`: separately labelled synthetic observations on bundled mapped paths.
+- `public/images/planner-sunset.jpg`: original generated decorative planner background.
+- `docs/SHADE-INTEGRATION.md`: calculation methodology, limitations and backend handoff.
+- `tests/shade.test.ts`, `tests/shade-demo.test.ts`: matching, calculation and adapter validation checks.

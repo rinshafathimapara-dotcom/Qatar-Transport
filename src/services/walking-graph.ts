@@ -146,7 +146,12 @@ export class PedestrianGraph {
       );
     return best;
   }
-  route(from: Location, to: Location, polys: Coord[][] = []) {
+  route(
+    from: Location,
+    to: Location,
+    polys: Coord[][] = [],
+    edgePenalty?: (id: number) => number,
+  ) {
     const box = this.data.coverage;
     if (
       box &&
@@ -161,6 +166,8 @@ export class PedestrianGraph {
       throw new Error(
         "This point is outside the bundled Doha walking pilot. Use a configured pedestrian provider for other areas.",
       );
+    const penalty = (id: number) =>
+      Math.min(4, Math.max(1, edgePenalty?.(id) ?? 1));
     const start = this.snap(from, polys),
       end = this.snap(to, polys),
       se = this.data.edges[start.edge],
@@ -181,15 +188,18 @@ export class PedestrianGraph {
       parentEdges[id] = edge;
       queue.push({ node: id, cost, score: cost + heuristic(id) });
     };
-    add(se[1], (1 - start.t) * se[2], -1, start.edge);
-    if (se[4] & 1) add(se[0], start.t * se[2], -1, start.edge);
-    const goals = new Map<number, number>([[ee[0], end.t * ee[2]]]);
-    if (ee[4] & 1) goals.set(ee[1], (1 - end.t) * ee[2]);
+    add(se[1], (1 - start.t) * se[2] * penalty(start.edge), -1, start.edge);
+    if (se[4] & 1)
+      add(se[0], start.t * se[2] * penalty(start.edge), -1, start.edge);
+    const goals = new Map<number, number>([
+      [ee[0], end.t * ee[2] * penalty(end.edge)],
+    ]);
+    if (ee[4] & 1) goals.set(ee[1], (1 - end.t) * ee[2] * penalty(end.edge));
     let best = Infinity,
       last = -1,
       visits = 0;
     const same = start.edge === end.edge && (se[4] & 1 || end.t >= start.t);
-    if (same) best = Math.abs(end.t - start.t) * se[2];
+    if (same) best = Math.abs(end.t - start.t) * se[2] * penalty(start.edge);
     while (queue.a.length) {
       const q = queue.pop();
       if (q.score >= best) break;
@@ -207,7 +217,7 @@ export class PedestrianGraph {
         const e = this.data.edges[next.edge];
         if (!avoids(this.data.nodes[e[0]], this.data.nodes[e[1]], polys))
           continue;
-        add(next.to, q.cost + e[2], q.node, next.edge);
+        add(next.to, q.cost + e[2] * penalty(next.edge), q.node, next.edge);
       }
     }
     if (!Number.isFinite(best))
@@ -263,10 +273,23 @@ export class PedestrianGraph {
       text: "Arrive at the mapped path nearest your destination.",
       pointIndex: coordinates.length - 1,
     });
+    const actualDistance = edgePenalty
+      ? coordinates
+          .slice(1)
+          .reduce(
+            (n, p, i) =>
+              n +
+              distance(
+                { longitude: coordinates[i][0], latitude: coordinates[i][1] },
+                { longitude: p[0], latitude: p[1] },
+              ),
+            0,
+          )
+      : best;
     return {
       coordinates,
-      minutes: Math.max(1, Math.ceil(best / 75)),
-      distance: Math.round(best),
+      minutes: Math.max(1, Math.ceil(actualDistance / 75)),
+      distance: Math.round(actualDistance),
       instructions,
       source: "Bundled Doha OSM pedestrian network (pilot)",
       networkDate: this.data.osm_timestamp,

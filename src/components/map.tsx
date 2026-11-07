@@ -12,6 +12,7 @@ import type {
   LiveFix,
   IndoorPassage,
 } from "@/types/database";
+import { shadeColor, shadeLevel, shadeSlices } from "@/services/shade";
 import { resolveMapTiles } from "@/lib/map-tiles";
 setWorkerUrl("/workers/maplibre-worker.js");
 const tiles = resolveMapTiles({
@@ -34,6 +35,7 @@ export default function MobilityMap({
   conceptFootprint,
   simulatedPosition,
   onConceptDecision,
+  showConceptRoute = false,
 }: {
   data: Collection;
   from: Location;
@@ -48,6 +50,7 @@ export default function MobilityMap({
   conceptFootprint?: [number, number][];
   simulatedPosition?: [number, number];
   onConceptDecision?: () => void;
+  showConceptRoute?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
@@ -58,6 +61,7 @@ export default function MobilityMap({
   const conceptDecision = useRef(onConceptDecision);
   conceptDecision.current = onConceptDecision;
   const simulationMarker = useRef<L.CircleMarker | null>(null);
+  const [showShade, setShowShade] = useState(true);
   const [failed, setFailed] = useState(false);
   const [follow, setFollow] = useState(true);
   const userLayer = useRef<L.CircleMarker | null>(null),
@@ -236,29 +240,6 @@ export default function MobilityMap({
       ),
     );
     data.parking_locations.forEach((p) => add(p, "P", "#7776b3"));
-    data.shade_segments.forEach((s) => {
-      if (
-        !valid(s.start_latitude, s.start_longitude) ||
-        !valid(s.end_latitude, s.end_longitude)
-      )
-        return;
-      const text = document.createElement("div");
-      text.textContent = `Shade: ${s.shade_level} · ${s.is_demo ? "Demo data" : "Imported observation; not live heat exposure"} · ${s.data_source}`;
-      L.polyline(
-        [
-          [s.start_latitude, s.start_longitude],
-          [s.end_latitude, s.end_longitude],
-        ],
-        {
-          color: "#8b9e3a",
-          weight: 7,
-          opacity: 0.7,
-          dashArray: s.is_demo ? "5 7" : undefined,
-        },
-      )
-        .bindPopup(text)
-        .addTo(layer);
-    });
     add(from, conceptOnly ? "E?" : "A", "#159b8b");
     add(to, conceptOnly ? "X?" : "B", "#ec725e");
     if (!route && layer.getLayers().length)
@@ -286,7 +267,7 @@ export default function MobilityMap({
           l.geometry === "routed" ||
           l.geometry === "verified-indoor" ||
           l.geometry === "mapped-transit" ||
-          (conceptOnly && l.geometry === "concept"),
+          ((conceptOnly || showConceptRoute) && l.geometry === "concept"),
       )
       .forEach((l) =>
         L.polyline(
@@ -319,7 +300,7 @@ export default function MobilityMap({
     return () => {
       layer.remove();
     };
-  }, [route, conceptOnly, conceptFootprint]);
+  }, [route, conceptOnly, conceptFootprint, showConceptRoute]);
   useEffect(() => {
     const m = map.current;
     if (!m) return;
@@ -407,6 +388,64 @@ export default function MobilityMap({
         .addTo(m);
     simulationMarker.current.setLatLng(latlng);
   }, [simulatedPosition]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !showShade) return;
+    const layer = L.featureGroup().addTo(m);
+    for (const row of data.shade_segments) {
+      if (
+        ![
+          row.start_latitude,
+          row.start_longitude,
+          row.end_latitude,
+          row.end_longitude,
+        ].every(Number.isFinite)
+      )
+        continue;
+      const content = document.createElement("div");
+      content.textContent = `${shadeLevel(row.shade_level)} shade · ${row.is_demo ? "SYNTHETIC DEMO" : "Imported categorical observation; verification unavailable"}. ${row.data_source || "Source unspecified"}. Coverage percentage, observation time and time-of-day validity unavailable.`;
+      L.polyline(
+        [
+          [row.start_latitude, row.start_longitude],
+          [row.end_latitude, row.end_longitude],
+        ],
+        {
+          color: shadeColor(row.shade_level),
+          weight: 7,
+          opacity: 0.7,
+          dashArray: row.is_demo ? "5 6" : undefined,
+        },
+      )
+        .bindPopup(content)
+        .addTo(layer);
+    }
+    for (const leg of route?.legs.filter(
+      (l) => l.mode === "walk" && l.geometry === "routed",
+    ) ?? []) {
+      for (const slice of shadeSlices(leg.coordinates, data.shade_segments)) {
+        const text = document.createElement("div");
+        text.textContent = slice.row
+          ? `Walking path matched to ${shadeLevel(slice.row.shade_level)} shade · ${slice.row.is_demo ? "synthetic demo" : "categorical spatial estimate"}. 5 m spatial tolerance; not a heat measurement.`
+          : "No shade information matched to this walking section.";
+        L.polyline(
+          [
+            [slice.a[1], slice.a[0]],
+            [slice.b[1], slice.b[0]],
+          ],
+          {
+            color: shadeColor(slice.row?.shade_level),
+            weight: 9,
+            opacity: 0.55,
+          },
+        )
+          .bindPopup(text)
+          .addTo(layer);
+      }
+    }
+    return () => {
+      layer.remove();
+    };
+  }, [showShade, data.shade_segments, route]);
   return (
     <div className="map-shell">
       <div
@@ -444,6 +483,31 @@ export default function MobilityMap({
             : "Destinations · Stations · Parking · Shade"}
         </span>
       </span>
+      {!conceptOnly && (
+        <div className="map-shade-controls">
+          <button
+            type="button"
+            aria-pressed={showShade}
+            onClick={() => setShowShade((v) => !v)}
+          >
+            {showShade ? "Hide shade overlay" : "Show shade overlay"}
+          </button>
+          {showShade && (
+            <div className="shade-legend">
+              <span style={{ color: shadeColor("high") }}>● High</span>
+              <span style={{ color: shadeColor("medium") }}>● Medium</span>
+              <span style={{ color: shadeColor("low") }}>● Low</span>
+              <span style={{ color: shadeColor("unknown") }}>● Unknown</span>
+              <small>
+                {data.shade_segments.length} segments ·{" "}
+                {data.shade_segments.some((r) => r.is_demo)
+                  ? "includes SYNTHETIC data"
+                  : "imported observations; not live shade"}
+              </small>
+            </div>
+          )}
+        </div>
+      )}
       {livePosition && (
         <button
           className="map-follow-button"
