@@ -5,6 +5,7 @@ smarter-qatar/
   .env.example
   .gitignore
   README.md
+  docs/MAP-SETUP.md
   docs/BACKEND-CONNECTION.md
   docs/STRUCTURE.md
   docs/VALIDATION.md
@@ -33,6 +34,7 @@ smarter-qatar/
   src/components/ui/stats-counter.tsx
   src/data/backend-contract.json
   src/data/demo.ts
+  src/lib/map-tiles.ts
   src/lib/supabase-config.ts
   src/lib/supabase-server.ts
   src/lib/supabase.ts
@@ -42,6 +44,7 @@ smarter-qatar/
   src/services/preferences.ts
   src/services/transit.ts
   src/types/database.ts
+  tests/map-tiles.test.ts
   tests/planner.test.ts
   tests/supabase-config.test.ts
   tests/transit.test.ts

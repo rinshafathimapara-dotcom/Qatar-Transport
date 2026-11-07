@@ -3,6 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Collection, Journey, Location } from "@/types/database";
+import { resolveMapTiles } from "@/lib/map-tiles";
+const tiles = resolveMapTiles({
+  cartoKey: process.env.NEXT_PUBLIC_CARTO_MAPS_KEY,
+  customUrl: process.env.NEXT_PUBLIC_MAP_TILE_URL,
+  customAttribution: process.env.NEXT_PUBLIC_MAP_ATTRIBUTION,
+});
 
 export default function MobilityMap({
   data,
@@ -23,6 +29,7 @@ export default function MobilityMap({
   const reduced = useRef(false);
   pick.current = onPick;
   const [failed, setFailed] = useState(false);
+  const [tileAttempt, setTileAttempt] = useState(0);
   const point = (
     p: Pick<Location, "latitude" | "longitude">,
   ): L.LatLngTuple => [p.latitude, p.longitude];
@@ -37,17 +44,6 @@ export default function MobilityMap({
     );
     map.current = m;
     L.control.zoom({ position: "topright" }).addTo(m);
-    L.tileLayer(
-      process.env.NEXT_PUBLIC_MAP_TILE_URL ||
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      },
-    )
-      .on("tileerror", () => setFailed(true))
-      .addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) =>
       pick.current?.({
         id: `map-${e.latlng.lng}-${e.latlng.lat}`,
@@ -64,6 +60,27 @@ export default function MobilityMap({
       map.current = null;
     };
   }, []);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || tiles.status !== "ready") return;
+    setFailed(false);
+    const layer = L.tileLayer(tiles.url, {
+      attribution: tiles.attribution,
+      maxZoom: tiles.maxZoom,
+      updateWhenIdle: true,
+      keepBuffer: 1,
+    });
+    layer.on("tileerror", () => {
+      // Stop the failed layer rather than repeatedly fetching blocked tiles.
+      layer.remove();
+      setFailed(true);
+    });
+    layer.addTo(m);
+    return () => {
+      layer.off();
+      layer.remove();
+    };
+  }, [tileAttempt]);
   useEffect(() => {
     const m = map.current;
     if (!m) return;
@@ -178,9 +195,26 @@ export default function MobilityMap({
         className="map-canvas"
         aria-label="Interactive Qatar map"
       />
-      {failed && (
-        <div className="map-notice">
-          Map tiles unavailable. Dataset markers remain available.
+      {(failed || tiles.status !== "ready") && (
+        <div className="map-notice map-provider-notice" role="status">
+          <strong>
+            {failed ? "Street map unavailable" : "Street map setup needed"}
+          </strong>
+          <span>
+            {failed
+              ? "The map provider could not load. Check the connection, provider key and website restrictions. Dataset locations remain visible."
+              : tiles.status !== "ready"
+                ? tiles.message
+                : ""}
+          </span>
+          {failed && (
+            <button
+              type="button"
+              onClick={() => setTileAttempt((value) => value + 1)}
+            >
+              Retry map
+            </button>
+          )}
         </div>
       )}
       <span className="map-label">

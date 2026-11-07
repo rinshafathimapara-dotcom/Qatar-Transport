@@ -27,3 +27,10 @@
 - Browser QA attempted via managed preview; `sites-preview start` failed with `preview relay unavailable: No such file or directory`. No browser playback or visual verification is claimed for this update.
 
 - Dashboard styling update: removed desktop and mobile fade overlays completely. White hero text uses text shadows over the unobscured clip; form inputs retain their existing opaque card. No new browser verification for this styling update.
+
+## Blocked basemap correction
+
+- Removed the direct OpenStreetMap community tile-server default after the user observed access-blocked tiles.
+- Added explicit CARTO key configuration and required provider attribution. No key means no third-party tile request; dataset markers remain on a clearly labelled neutral background.
+- Failed layers stop requesting tiles; manual Retry is available. Configuration tests, TypeScript and production build pass.
+- CARTO's current documentation and key page were read; no live CARTO tile success is claimed without a configured key. See MAP-SETUP.md.

@@ -2169,3 +2169,15 @@ dd {
 @media (prefers-reduced-motion: reduce) {
   .hero-background-video { display: none; }
 }
+.map-provider-notice {
+  top: auto;
+  bottom: 64px;
+  right: 16px;
+  left: 16px;
+  max-width: 480px;
+  pointer-events: auto;
+  box-shadow: 0 3px 15px #18384714;
+}
+.map-provider-notice strong, .map-provider-notice span { display: block; }
+.map-provider-notice span { margin-top: 4px; }
+.map-provider-notice button { margin-top: 10px; padding: 6px 12px; background: var(--ink); color: white; border-radius: 5px; }

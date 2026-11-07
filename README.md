@@ -51,7 +51,9 @@ Local demo profile and saved journeys are stored in this browser's localStorage.
 | `GRAPHHOPPER_URL`               | Real walking          | Your licensed/self-hosted GraphHopper base URL, e.g. `https://routing.example.org/` |
 | `GRAPHHOPPER_API_KEY`           | Provider dependent    | Server-only routing credential                                                      |
 | `PHOTON_URL`                    | External place search | Approved/self-hosted Photon base URL                                                |
-| `NEXT_PUBLIC_MAP_TILE_URL`      | Optional              | Approved raster tile template with `{z}/{x}/{y}`                                    |
+| `NEXT_PUBLIC_CARTO_MAPS_KEY` | Street-map background | Browser key from https://carto.com/basemaps/apikey/ |
+| `NEXT_PUBLIC_MAP_TILE_URL` | Optional alternative | Authorized raster template with `{z}/{x}/{y}` |
+| `NEXT_PUBLIC_MAP_ATTRIBUTION` | With custom template | Required custom-provider credit |
 
 Both public Supabase values activate connected mode. Connected data errors are displayed; the application never silently substitutes demo fixtures for failed Supabase reads. Restart Next.js after changing environment variables.
 
@@ -96,7 +98,9 @@ The first dashboard uses the user-supplied eight-second city clip as a decorativ
 
 The map uses Leaflet 1.9.4. Places, transport stops, parking and shade segments come from Supabase. Places and station names both populate location search. Connected mode excludes demo rows by default; use **Include demo records** explicitly. Join records inherit inclusion from parent routes and stops.
 
-Default tiles use OpenStreetMap standard raster tiles with visible attribution. For local evaluation only; review https://operations.osmfoundation.org/policies/tiles/ before wider use and choose a suitable commercial or self-hosted tile provider. OSM tiles require Internet access. No tiles are prefetched or scraped.
+The street-map background uses CARTO Voyager when `NEXT_PUBLIC_CARTO_MAPS_KEY` is configured, with visible OpenStreetMap and CARTO credits. A key is required by CARTO's current terms, including for its free non-commercial allowance. See [map setup](docs/MAP-SETUP.md). An authorized custom raster provider may instead be configured using `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_ATTRIBUTION`.
+
+There is no automatic fallback to the OpenStreetMap community tile server: it blocked this application's requests. Missing configuration shows a clearly labelled neutral background with dataset markers and schematic routes. Tile failures stop the layer and offer manual Retry rather than repeated requests to a blocked service. No headers, proxy or alternate OSM host are used to bypass the block.
 
 Photo: **Doha skyline**, Haakon S. Krohn (4 March 2013), https://commons.wikimedia.org/wiki/File:Doha_skyline.jpg, **CC BY-SA 3.0**, https://creativecommons.org/licenses/by-sa/3.0/. The skyline image remains available as an original project asset; the dashboard now uses the user-provided clip and its derived poster. The downloaded image retains that licence; any adapted image must preserve its share-alike terms. Photo attribution is visible in Explore → data information.
 
