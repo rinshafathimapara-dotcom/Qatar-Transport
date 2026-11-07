@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -5,7 +6,6 @@ import {
   Pause,
   Navigation,
   DoorOpen,
-  Sun,
   Footprints,
 } from "lucide-react";
 import type { Journey, LiveFix, IndoorPassage } from "@/types/database";
@@ -18,6 +18,7 @@ import { choosePassage } from "@/services/indoor-routing";
 import { distance } from "@/services/geo";
 import { walkingMinutes, walkingLimit } from "@/services/planner";
 import IndoorConcept from "./indoor-concept";
+
 export default function WalkingAssistant({
   route,
   maxWalkingMinutes = 20,
@@ -47,6 +48,7 @@ export default function WalkingAssistant({
   const activeRoute = useRef(route);
   activeRoute.current = route;
   const canNavigate = route.legs.every((l) => l.geometry !== "concept");
+
   useEffect(() => {
     if (!canNavigate && tracking) {
       setTracking(false);
@@ -54,17 +56,20 @@ export default function WalkingAssistant({
       onPosition(null);
     }
   }, [canNavigate, tracking, onPosition]);
+
   const [walked, setWalked] = useState(0);
   const previousFix = useRef<LiveFix | null>(null);
   const decisions = useRef(new Set<string>()),
     watch = useRef<number | null>(null);
   const available = relevantPassages(route, passages, new Date(clock));
   const selected = available.find((p) => p.id === selectedId);
+
   useEffect(() => {
     setClock(Date.now());
     const timer = setInterval(() => setClock(Date.now()), 5000);
     return () => clearInterval(timer);
   }, []);
+
   useEffect(() => {
     if (!tracking) return;
     if (!navigator.geolocation || !window.isSecureContext) {
@@ -124,6 +129,7 @@ export default function WalkingAssistant({
       onPosition(null);
     };
   }, [tracking, onPosition]);
+
   useEffect(() => {
     if (!tracking || !fix) return;
     const next = available.find(
@@ -131,6 +137,7 @@ export default function WalkingAssistant({
     );
     if (next) onSelect(next.id);
   }, [fix, tracking, available, clock, onSelect]);
+
   const fresh = fix && clock - fix.timestamp < 15000;
   const legs = route.legs.filter(
     (l) => l.mode === "walk" && l.geometry === "routed",
@@ -143,6 +150,7 @@ export default function WalkingAssistant({
   const instruction = current?.leg.instructions?.filter(
     (i) => i.pointIndex >= current.pointIndex,
   )[0]?.text;
+
   async function choose(choice: "inside" | "outside") {
     if (!selected) return;
     setBusy(true);
@@ -166,9 +174,11 @@ export default function WalkingAssistant({
       setBusy(false);
     }
   }
+
   const indoors = route.legs
     .filter((l) => l.environment === "indoor")
     .reduce((n, l) => n + l.minutes, 0);
+
   if (!canNavigate)
     return (
       <p className="data-note">
@@ -176,6 +186,7 @@ export default function WalkingAssistant({
         road-following journey for live location tracking.
       </p>
     );
+
   return (
     <div className="walking-assistant">
       <div className="walking-assistant-heading">
@@ -207,12 +218,14 @@ export default function WalkingAssistant({
           {tracking ? "Stop location tracking" : "Follow my location"}
         </button>
       </div>
+
       {route.legs.some((l) => l.geometry === "concept") && (
         <p className="data-note">
           This is a dataset corridor preview. Plan a road-following walking
           journey to start GPS navigation.
         </p>
       )}
+
       <p className="data-note">
         Your blue dot is your browser's GPS estimate, not a guaranteed road
         position. Tracking stays in this tab and stops when you leave the
@@ -220,6 +233,7 @@ export default function WalkingAssistant({
         app's server. Only an optional external provider forwards those
         endpoints to that provider.
       </p>
+
       {tracking && (
         <p className="data-note">
           {Math.round(walked)} m walked from filtered GPS · ~
@@ -227,6 +241,7 @@ export default function WalkingAssistant({
           GPS drift and indoor reception affect this estimate.
         </p>
       )}
+
       {tracking && (
         <div className="gps-status" role="status">
           {fix ? (
@@ -264,22 +279,13 @@ export default function WalkingAssistant({
           )}
         </div>
       )}
+
       {message && (
         <p role="status" className="data-note">
           {message}
         </p>
       )}
-      <div className="walking-comfort">
-        <Sun size={19} />
-        <p>
-          {indoors
-            ? `About ${indoors} min on the selected mapped indoor passage. `
-            : ""}
-          Outdoor shade and heat exposure are unknown unless supplied by
-          reviewed data. Indoor or shaded walking may improve comfort; it does
-          not guarantee safety from heat.
-        </p>
-      </div>
+
       {available.length ? (
         <div className="pause-list">
           <strong>Indoor decision points on this walking leg</strong>
@@ -305,9 +311,11 @@ export default function WalkingAssistant({
           or walk-through permissions have been invented for live navigation.
         </p>
       )}
+
       <a className="secondary" href="/demo">
         Play the walking journey demo →
       </a>
+
       <details className="walking-directions">
         <summary>
           Walking directions · {walkingMinutes(route)} minutes total
@@ -332,7 +340,9 @@ export default function WalkingAssistant({
             </section>
           ))}
       </details>
+
       <IndoorConcept />
+
       {selected && (
         <section
           className="indoor-decision"
