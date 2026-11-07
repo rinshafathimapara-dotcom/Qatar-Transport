@@ -66,12 +66,16 @@ import HeroVideo from "./hero-video";
 import WalkingAssistant from "./walking-assistant";
 import indoorRecords from "@/data/indoor-passages.json";
 import { validatePassages, relevantPassages } from "@/services/navigation";
+
 const indoorPassages = validatePassages(indoorRecords);
+
 import StaggerText from "./ui/stagger-text";
+
 const Map = dynamic(() => import("./map"), {
   ssr: false,
   loading: () => <div className="map-loading">Preparing your city map…</div>,
 });
+
 const priorities: Priority[] = [
   "Balanced",
   "Fastest",
@@ -79,6 +83,7 @@ const priorities: Priority[] = [
   "Most comfortable",
   "Budget-friendly",
 ];
+
 const links = [
   ["plan", "Plan a journey"],
   ["explore", "Explore Qatar"],
@@ -86,6 +91,7 @@ const links = [
   ["demand", "Demand alerts"],
   ["parking", "Find parking"],
 ] as const;
+
 type Saved = {
   id: string;
   from: Location;
@@ -93,6 +99,7 @@ type Saved = {
   priority: Priority;
   route: Journey;
 };
+
 const initialPrefs = {
   preferred_priority: "Fastest" as string,
   max_walking_minutes: 20,
@@ -100,6 +107,7 @@ const initialPrefs = {
   prefer_public_transport: true,
   budget_limit: 20 as number | null,
 };
+
 const date = (v: string) =>
   new Date(v).toLocaleString("en-GB", {
     timeZone: "Asia/Qatar",
@@ -108,6 +116,7 @@ const date = (v: string) =>
     hour: "2-digit",
     minute: "2-digit",
   }) + " (Qatar)";
+
 export default function MobilityApp({
   initialSection = "home",
 }: {
@@ -115,6 +124,7 @@ export default function MobilityApp({
 }) {
   const router = useRouter(),
     reduced = useReducedMotion();
+
   const [farePrefs, setFarePrefs] = useState<FarePreferences>(
     defaultFarePreferences,
   );
@@ -125,6 +135,7 @@ export default function MobilityApp({
   const [cityLoading, setCityLoading] = useState(true),
     [cityIssues, setCityIssues] = useState<string[]>([]),
     [weatherId, setWeatherId] = useState("");
+
   const refreshCity = useCallback(() => {
     const request = ++cityRequest.current;
     setCityLoading(true);
@@ -140,22 +151,28 @@ export default function MobilityApp({
         if (request === cityRequest.current) setCityLoading(false);
       });
   }, [includeDemo]);
+
   useEffect(() => {
     refreshCity();
   }, [refreshCity]);
+
   const weather =
     city.weather_conditions.find((r) => r.id === weatherId) ??
     city.weather_conditions.find((r) => r.is_demo === false) ??
     city.weather_conditions[0];
+
   const [presentationShade, setPresentationShade] = useState<
     import("@/services/shade").ShadeObservation[] | null
   >(null);
+
   const [livePosition, setLivePosition] = useState<LiveFix | null>(null);
   const [selectedPassage, setSelectedPassage] = useState<string | null>(null);
+
   const [data, setData] = useState<Collection | null>(null),
     [dataError, setDataError] = useState(""),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
+
   const [from, setFrom] = useState<Location>(
       isDemo
         ? demo.places[0]
@@ -179,10 +196,12 @@ export default function MobilityApp({
     [priority, setPriority] = useState<Priority>("Fastest"),
     [routes, setRoutes] = useState<Journey[]>([]),
     [selected, setSelected] = useState<string>("");
+
   const [menu, setMenu] = useState(false),
     [dropdown, setDropdown] = useState<string | null>(null),
     [pick, setPick] = useState<"from" | "to" | null>(null),
     [filter, setFilter] = useState("All");
+
   const [user, setUser] = useState<User | null>(null),
     [authReady, setAuthReady] = useState(!supabase),
     [demoUser, setDemoUser] = useState(false),
@@ -191,9 +210,11 @@ export default function MobilityApp({
     [fullName, setFullName] = useState(""),
     [authMode, setAuthMode] = useState("login"),
     [authBusy, setAuthBusy] = useState(false);
+
   const datasetRequest = useRef(0);
   const notify = useCallback((s: string) => setMessage(s), []);
   const signed = !!user || (isDemo && demoUser);
+
   const refresh = useCallback(() => {
     const request = ++datasetRequest.current;
     setDataError("");
@@ -211,7 +232,9 @@ export default function MobilityApp({
         if (request === datasetRequest.current) setDataError(e.message);
       });
   }, [includeDemo]);
+
   useEffect(refresh, [refresh]);
+
   useEffect(() => {
     if (!supabase) {
       try {
@@ -226,10 +249,12 @@ export default function MobilityApp({
       }
       return;
     }
+
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       setAuthReady(true);
     });
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
       setAuthReady(true);
@@ -238,16 +263,21 @@ export default function MobilityApp({
         router.push("/auth");
       }
     });
+
     return () => sub.subscription.unsubscribe();
   }, [notify, router]);
+
   useEffect(() => {
     if (!user || !supabase) {
       if (!isDemo) setSaved([]);
       return;
     }
+
     let active = true;
+
     async function fetchPrivate() {
       const db = supabase!;
+
       const [s, p, profile] = await Promise.all([
         db.from("saved_journeys").select("*").eq("user_id", user!.id),
         db
@@ -257,13 +287,16 @@ export default function MobilityApp({
           .maybeSingle(),
         db.from("profiles").select("*").eq("id", user!.id).maybeSingle(),
       ]);
+
       if (!active) return;
+
       if (s.error || p.error || profile.error) {
         notify(
           "Personal data could not load. Check the shared tables and RLS policies.",
         );
         return;
       }
+
       setSaved(
         (s.data || []).map((r) => ({
           id: r.id,
@@ -283,6 +316,7 @@ export default function MobilityApp({
           route: r.route_snapshot as unknown as Journey,
         })),
       );
+
       if (p.data) {
         setPrefs({
           ...p.data,
@@ -290,28 +324,36 @@ export default function MobilityApp({
         });
         setPriority(normalizePriority(p.data.preferred_priority));
       }
+
       setFullName(profile.data?.full_name || "");
     }
+
     void fetchPrivate();
+
     return () => {
       active = false;
     };
   }, [user, notify]);
+
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(""), 9000);
     return () => clearTimeout(t);
   }, [message]);
+
   const pricedRoutes = routes.map((r) => withFare(r, farePrefs));
+
   const knownFares = pricedRoutes.filter(
     (r) =>
       r.fare?.amount !== null &&
       r.fare?.amount !== undefined &&
       ["free", "published_reference"].includes(r.fare.status),
   );
+
   const lowestKnown = knownFares.length
     ? Math.min(...knownFares.map((r) => r.fare!.amount!))
     : null;
+
   const sorted = rank(
       pricedRoutes.filter(
         (r) => walkingMinutes(r) <= walkingLimit(prefs.max_walking_minutes),
@@ -319,7 +361,9 @@ export default function MobilityApp({
       priority,
     ),
     route = sorted.find((r) => r.id === selected) || sorted[0];
+
   const current = initialSection;
+
   const insights = (mode: "weather" | "all" | "traffic" | "accessibility") => (
     <MobilityInsights
       data={city}
@@ -332,12 +376,15 @@ export default function MobilityApp({
       onWeather={(r) => setWeatherId(r.id)}
     />
   );
+
   async function search() {
     if (!data) return;
+
     setBusy(true);
     setDrivingReason("");
     setRoutes([]);
     setPresentationShade(null);
+
     try {
       const result = await plan(from, to, data, isDemo, {
         maxWalkingMinutes: prefs.max_walking_minutes,
@@ -345,8 +392,10 @@ export default function MobilityApp({
         farePreferences: farePrefs,
         onDrivingUnavailable: setDrivingReason,
       });
+
       setRoutes(result);
       setSelected(rank(result, priority)[0]?.id || "");
+
       if (current === "home") {
         sessionStorage.setItem(
           "sq-active",
@@ -360,10 +409,13 @@ export default function MobilityApp({
       setBusy(false);
     }
   }
+
   // Preserve selected endpoints through normal App Router navigation without a global store.
   useEffect(() => {
     if (current !== "plan" || !data) return;
+
     const stored = sessionStorage.getItem("sq-active");
+
     if (stored) {
       try {
         const active = JSON.parse(stored);
@@ -378,6 +430,7 @@ export default function MobilityApp({
         sessionStorage.removeItem("sq-active");
       }
     }
+
     const q = new URLSearchParams(window.location.search),
       a = [...data.places, ...data.transport_stops].find(
         (p) => p.id === q.get("from"),
@@ -385,11 +438,15 @@ export default function MobilityApp({
       b = [...data.places, ...data.transport_stops].find(
         (p) => p.id === q.get("to"),
       );
+
     if (a && b) {
       setFrom(a);
       setTo(b);
       setBusy(true);
-      plan(a, b, data, isDemo, { maxWalkingMinutes: prefs.max_walking_minutes })
+
+      plan(a, b, data, isDemo, {
+        maxWalkingMinutes: prefs.max_walking_minutes,
+      })
         .then((r) => {
           setRoutes(r);
           setSelected(r[0]?.id || "");
@@ -398,14 +455,18 @@ export default function MobilityApp({
         .finally(() => setBusy(false));
     }
   }, [current, data, notify]);
+
   async function saveJourney() {
     if (!route) return;
+
     if (!signed) {
       notify("Sign in or open a local demo profile to save journeys.");
       router.push("/auth");
       return;
     }
+
     const item: Saved = { id: crypto.randomUUID(), from, to, priority, route };
+
     if (supabase && user) {
       const { data: insert, error } = await supabase
         .from("saved_journeys")
@@ -422,19 +483,25 @@ export default function MobilityApp({
         })
         .select()
         .single();
+
       if (error) {
         notify(error.message);
         return;
       }
+
       item.id = insert.id;
     }
+
     const next = [item, ...saved];
     setSaved(next);
+
     if (isDemo) localStorage.setItem("sq-demo-saved", JSON.stringify(next));
+
     notify(
       isDemo ? "Saved on this browser in your demo profile." : "Journey saved.",
     );
   }
+
   async function removeSaved(id: string) {
     if (supabase) {
       const { error } = await supabase
@@ -442,18 +509,23 @@ export default function MobilityApp({
         .delete()
         .eq("id", id)
         .eq("user_id", user!.id);
+
       if (error) {
         notify(error.message);
         return;
       }
     }
+
     const next = saved.filter((s) => s.id !== id);
     setSaved(next);
+
     if (isDemo) localStorage.setItem("sq-demo-saved", JSON.stringify(next));
   }
+
   async function logout() {
     if (supabase) {
       const { error } = await supabase.auth.signOut();
+
       if (error) {
         notify(error.message);
         return;
@@ -462,25 +534,32 @@ export default function MobilityApp({
       setDemoUser(false);
       localStorage.removeItem("sq-demo-user");
     }
+
     setUser(null);
     router.push("/");
   }
+
   async function auth(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!supabase) return;
+
     setAuthBusy(true);
+
     const f = new FormData(e.currentTarget),
       email = String(f.get("email") || ""),
       password = String(f.get("password") || "");
+
     try {
       if (authMode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin + "/auth",
         });
+
         if (error) throw error;
         notify("Check your email for a reset link.");
       } else if (authMode === "update") {
         const { error } = await supabase.auth.updateUser({ password });
+
         if (error) throw error;
         notify("Password updated.");
         router.push("/profile");
@@ -493,6 +572,7 @@ export default function MobilityApp({
             emailRedirectTo: window.location.origin + "/profile",
           },
         });
+
         if (error) throw error;
         notify("Check your email to confirm your account, then sign in.");
       } else {
@@ -500,6 +580,7 @@ export default function MobilityApp({
           email,
           password,
         });
+
         if (error) throw error;
         router.push("/profile");
       }
@@ -509,24 +590,29 @@ export default function MobilityApp({
       setAuthBusy(false);
     }
   }
+
   async function savePreferences(e: React.FormEvent) {
     e.preventDefault();
+
     if (supabase && user) {
       const { data: existing, error: readError } = await supabase
         .from("user_preferences")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
+
       if (readError) {
         notify(readError.message);
         return;
       }
+
       const payload = {
         ...prefs,
         preferred_priority: storedPriority(prefs.preferred_priority),
         user_id: user.id,
         updated_at: new Date().toISOString(),
       };
+
       const { error } = existing
         ? await supabase
             .from("user_preferences")
@@ -534,29 +620,38 @@ export default function MobilityApp({
             .eq("id", existing.id)
             .eq("user_id", user.id)
         : await supabase.from("user_preferences").insert(payload);
+
       if (error) {
         notify(error.message);
         return;
       }
+
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({ id: user.id, email: user.email, full_name: fullName });
+
       if (profileError) {
         notify(profileError.message);
         return;
       }
-    } else localStorage.setItem("sq-demo-prefs", JSON.stringify(prefs));
+    } else {
+      localStorage.setItem("sq-demo-prefs", JSON.stringify(prefs));
+    }
+
     setPriority(normalizePriority(prefs.preferred_priority));
+
     notify(
       "Travel preferences saved. Ranking uses your default priority; other preferences are advisory until provider data supports them.",
     );
   }
+
   function reopen(s: Saved) {
     setFrom(s.from);
     setTo(s.to);
     setPriority(s.priority);
     setRoutes([s.route]);
     setSelected(s.route.id);
+
     sessionStorage.setItem(
       "sq-active",
       JSON.stringify({
@@ -566,8 +661,10 @@ export default function MobilityApp({
         priority: s.priority,
       }),
     );
+
     router.push("/plan");
   }
+
   const planner = (
     <div className="planner-form">
       <div className="planner-inputs">
@@ -591,6 +688,7 @@ export default function MobilityApp({
           }
           onError={notify}
         />
+
         <button
           className="swap"
           aria-label="Swap origin and destination"
@@ -602,6 +700,7 @@ export default function MobilityApp({
         >
           <ArrowDownUp size={18} />
         </button>
+
         <LocationSearch
           label="To"
           value={to}
@@ -623,7 +722,9 @@ export default function MobilityApp({
           onError={notify}
         />
       </div>
+
       <RideChoices from={from} to={to} />
+
       <label className="walking-budget">
         Total walking budget{" "}
         <select
@@ -642,6 +743,7 @@ export default function MobilityApp({
           <option value={20}>20 minutes</option>
         </select>
       </label>
+
       <div className="planner-bottom">
         <span>
           <Clock size={15} /> Estimates · no live departures
@@ -653,6 +755,7 @@ export default function MobilityApp({
       </div>
     </div>
   );
+
   const mapArea = data ? (
     <Map
       data={
@@ -686,6 +789,7 @@ export default function MobilityApp({
   ) : (
     <div className="map-loading">Loading geographical data…</div>
   );
+
   const picks = (
     <div className="map-picks">
       <span>Select on map:</span>
@@ -704,9 +808,11 @@ export default function MobilityApp({
       {pick && <small>Click a marker or map point</small>}
     </div>
   );
+
   function guard(children: React.ReactNode) {
     if (!authReady)
       return <div className="empty-state">Checking your session…</div>;
+
     return signed ? (
       children
     ) : (
@@ -720,11 +826,13 @@ export default function MobilityApp({
       </div>
     );
   }
+
   return (
     <div className="app">
       <a className="skip" href="#main">
         Skip to content
       </a>
+
       <header className="header">
         <Link href="/" className="brand" aria-label="Smarter Qatar home">
           <span className="brand-symbol">
@@ -737,6 +845,7 @@ export default function MobilityApp({
             </span>
           </span>
         </Link>
+
         <nav
           aria-label="Main navigation"
           className={menu ? "nav mobile-open" : "nav"}
@@ -744,6 +853,7 @@ export default function MobilityApp({
           <Link className={current === "plan" ? "active" : ""} href="/plan">
             Plan a journey
           </Link>
+
           <div
             className="nav-dropdown"
             onMouseEnter={() => setDropdown("explore")}
@@ -758,6 +868,7 @@ export default function MobilityApp({
             >
               Discover <ChevronDown size={14} />
             </button>
+
             <AnimatePresence>
               {dropdown === "explore" && (
                 <motion.div
@@ -780,6 +891,7 @@ export default function MobilityApp({
               )}
             </AnimatePresence>
           </div>
+
           <Link href="/saved">Saved journeys</Link>
           <Link href="/conditions">City conditions</Link>
           <Link href="/walk">Walking experience</Link>
@@ -793,6 +905,7 @@ export default function MobilityApp({
             <ArrowUpRight size={15} />
           </Link>
         </nav>
+
         <button
           className="mobile-toggle icon-button"
           aria-label="Toggle navigation"
@@ -802,6 +915,7 @@ export default function MobilityApp({
           {menu ? <X /> : <Menu />}
         </button>
       </header>
+
       <main id="main">
         <div className="mode-bar">
           <span>
@@ -816,11 +930,13 @@ export default function MobilityApp({
                     : "CONNECTED TO SUPABASE"
                   : "CONNECTING TO SUPABASE"}
           </span>
+
           <p>
             {isDemo
               ? "A working prototype. Sample journeys, no live feeds."
               : "Source and status are shown with each dataset."}
           </p>
+
           {!isDemo && (
             <button
               className="text-button"
@@ -836,16 +952,19 @@ export default function MobilityApp({
                 : "Show all dataset records"}
             </button>
           )}
+
           <Link href="/explore">
             About the data <ArrowUpRight size={13} />
           </Link>
         </div>
+
         {dataError && (
           <div className="error-banner" role="alert">
             Data could not load: {dataError}
             <button onClick={refresh}>Retry</button>
           </div>
         )}
+
         {!isDemo &&
           data &&
           !data.places.length &&
@@ -865,14 +984,17 @@ export default function MobilityApp({
               </div>
             </div>
           )}
+
         {current === "home" && (
           <>
             <section className="hero hero-with-video">
               <HeroVideo />
+
               <div className="hero-copy">
                 <div className="eyebrow">
                   <span /> LESS GUESSWORK. MORE QATAR.
                 </div>
+
                 <motion.h1
                   initial={{ opacity: 0, y: reduced ? 0 : 16 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -890,11 +1012,14 @@ export default function MobilityApp({
                     <path d="M3 10 Q65 -2 145 8" />
                   </svg>
                 </motion.h1>
+
                 <p className="hero-intro">
                   A better way from here to there. Connect your journey with
                   Metro, walking and a little local intelligence.
                 </p>
+
                 {planner}
+
                 <div className="quick-places">
                   <span>A little inspiration</span>
                   {(data?.places || []).slice(2, 4).map((p) => (
@@ -912,6 +1037,7 @@ export default function MobilityApp({
                   ))}
                 </div>
               </div>
+
               <div className="hero-art">
                 <div className="hero-video-caption">
                   <span>YOUR CITY. YOUR NEXT CONNECTION.</span>
@@ -921,6 +1047,7 @@ export default function MobilityApp({
                     to get there.
                   </strong>
                 </div>
+
                 <div className="floating-route">
                   <span className="floating-icon">
                     <TrainFront size={20} />
@@ -932,15 +1059,19 @@ export default function MobilityApp({
                     <Check size={15} />
                   </span>
                 </div>
+
                 <div className="round-stamp">
                   A LITTLE SMARTER
                   <Navigation size={25} />
                   EVERY JOURNEY
                 </div>
+
                 <span className="art-spark">✳</span>
               </div>
             </section>
+
             <div className="home-conditions">{insights("weather")}</div>
+
             <section
               className="stats-row"
               aria-label="Current dataset statistics"
@@ -985,6 +1116,7 @@ export default function MobilityApp({
                 </div>
               ))}
             </section>
+
             <section className="features-section">
               <div className="section-heading">
                 <div>
@@ -997,6 +1129,7 @@ export default function MobilityApp({
                   More time getting out there.
                 </p>
               </div>
+
               <div className="feature-grid">
                 {[
                   {
@@ -1034,6 +1167,7 @@ export default function MobilityApp({
                 ))}
               </div>
             </section>
+
             <section className="bottom-callout">
               <span>
                 <Bell size={24} />
@@ -1051,6 +1185,7 @@ export default function MobilityApp({
             </section>
           </>
         )}
+
         {current !== "home" && (
           <div
             className={`interior ${current === "plan" ? "planner-dashboard" : ""}`}
@@ -1094,11 +1229,15 @@ export default function MobilityApp({
                 }
               </p>
             </div>
+
             {(current === "plan" || current === "comfort") && (
               <>
                 {planner}
+
                 <FareSettings value={farePrefs} onChange={setFarePrefs} />
+
                 {insights("weather")}
+
                 <div className="priority-row">
                   <span>Your priority</span>
                   {priorities.map((p) => (
@@ -1123,6 +1262,7 @@ export default function MobilityApp({
                     </button>
                   ))}
                 </div>
+
                 {!isDemo &&
                   data &&
                   (!data.transport_stops.length ||
@@ -1149,6 +1289,7 @@ export default function MobilityApp({
                       </div>
                     </div>
                   )}
+
                 {current === "comfort" && (
                   <ShadeDemoPanel
                     rows={city.shade_demo_routes}
@@ -1166,10 +1307,13 @@ export default function MobilityApp({
                     }}
                   />
                 )}
+
                 <div className="journey-layout">
                   <div className="route-options">
                     {busy ? (
-                      <div className="empty-state">Comparing your options…</div>
+                      <div className="empty-state">
+                        Comparing your options…
+                      </div>
                     ) : !sorted.length ? (
                       <div className="empty-state">
                         <Compass size={35} />
@@ -1203,7 +1347,9 @@ export default function MobilityApp({
                                   : "Estimate"}
                             </span>
                           </div>
+
                           <h3>{r.title}</h3>
+
                           <div className="route-metrics">
                             <strong>
                               {r.minutes}
@@ -1225,7 +1371,9 @@ export default function MobilityApp({
                               </small>
                             </span>
                           </div>
+
                           <p className="fare-ticket-label">{r.fare?.ticket}</p>
+
                           {r.fare?.amount !== null &&
                             r.fare?.amount === lowestKnown &&
                             ["free", "published_reference"].includes(
@@ -1235,6 +1383,7 @@ export default function MobilityApp({
                                 Lowest known fare among these results
                               </span>
                             )}
+
                           <div className="route-modes">
                             {r.legs.map((l, j) => (
                               <span key={j}>
@@ -1254,6 +1403,7 @@ export default function MobilityApp({
                               </span>
                             ))}
                           </div>
+
                           <div className="walking-summary">
                             <strong>
                               {Math.round(walkingMinutes(r) * 10) / 10} min on
@@ -1270,6 +1420,7 @@ export default function MobilityApp({
                                 : "Outdoor walking"}
                             </span>
                           </div>
+
                           {r.shadeInfo && (
                             <div className="shade-card-indicator">
                               <Sun size={15} />
@@ -1283,6 +1434,7 @@ export default function MobilityApp({
                               </span>
                             </div>
                           )}
+
                           {r.id === "walking-shade" &&
                             routes.find((a) => a.id === "walking") && (
                               <p className="data-note">
@@ -1293,6 +1445,7 @@ export default function MobilityApp({
                                 categorical shade preference
                               </p>
                             )}
+
                           {r.shadeDetails && (
                             <p className="data-note">
                               {r.shadeDetails.shadedDistance ?? "—"} m shaded ·{" "}
@@ -1300,6 +1453,7 @@ export default function MobilityApp({
                               · dataset estimate
                             </p>
                           )}
+
                           <div className="route-sub">
                             {(r.walking / 1000).toFixed(1)} km walking ·{" "}
                             {r.transfers} transfers
@@ -1310,9 +1464,153 @@ export default function MobilityApp({
                         </button>
                       ))
                     )}
+
+                    {/* Additional illustrative mixed-mode journey options */}
+                    {!busy && sorted.length > 0 && (
+                      <>
+                        <article className="route-card">
+                          <div className="route-top">
+                            <span className="pill">Mixed-mode option</span>
+                            <span>Illustrative option</span>
+                          </div>
+
+                          <h3>Uber + Metro + Walking</h3>
+
+                          <div className="route-metrics">
+                            <strong>
+                              28<small> min</small>
+                            </strong>
+                            <span>
+                              QAR 18
+                              <small>Estimated fare</small>
+                            </span>
+                          </div>
+
+                          <div className="route-modes">
+                            <span>
+                              <Car size={17} />
+                              <small>Uber</small>
+                              <ArrowRight size={13} />
+                            </span>
+                            <span>
+                              <TrainFront size={17} />
+                              <small>Metro</small>
+                              <ArrowRight size={13} />
+                            </span>
+                            <span>
+                              <Footprints size={17} />
+                              <small>Walk</small>
+                            </span>
+                          </div>
+
+                          <div className="walking-summary">
+                            <strong>6 min walking</strong>
+                            <span>Short final walk to your destination</span>
+                          </div>
+
+                          <p className="route-sub">
+                            Convenient connection with less walking.
+                          </p>
+                        </article>
+
+                        <article className="route-card">
+                          <div className="route-top">
+                            <span className="pill">Mixed-mode option</span>
+                            <span>Illustrative option</span>
+                          </div>
+
+                          <h3>Walking + Metro + Uber</h3>
+
+                          <div className="route-metrics">
+                            <strong>
+                              31<small> min</small>
+                            </strong>
+                            <span>
+                              QAR 20
+                              <small>Estimated fare</small>
+                            </span>
+                          </div>
+
+                          <div className="route-modes">
+                            <span>
+                              <Footprints size={17} />
+                              <small>Walk</small>
+                              <ArrowRight size={13} />
+                            </span>
+                            <span>
+                              <TrainFront size={17} />
+                              <small>Metro</small>
+                              <ArrowRight size={13} />
+                            </span>
+                            <span>
+                              <Car size={17} />
+                              <small>Uber</small>
+                            </span>
+                          </div>
+
+                          <div className="walking-summary">
+                            <strong>8 min walking</strong>
+                            <span>Uber connection for the final stretch</span>
+                          </div>
+
+                          <p className="route-sub">
+                            A flexible option combining public and private
+                            transport.
+                          </p>
+                        </article>
+
+                        <article className="route-card">
+                          <div className="route-top">
+                            <span className="pill">Mixed-mode option</span>
+                            <span>Illustrative option</span>
+                          </div>
+
+                          <h3>Metro + Walking + Uber</h3>
+
+                          <div className="route-metrics">
+                            <strong>
+                              26<small> min</small>
+                            </strong>
+                            <span>
+                              QAR 22
+                              <small>Estimated fare</small>
+                            </span>
+                          </div>
+
+                          <div className="route-modes">
+                            <span>
+                              <TrainFront size={17} />
+                              <small>Metro</small>
+                              <ArrowRight size={13} />
+                            </span>
+                            <span>
+                              <Footprints size={17} />
+                              <small>Walk</small>
+                              <ArrowRight size={13} />
+                            </span>
+                            <span>
+                              <Car size={17} />
+                              <small>Uber</small>
+                            </span>
+                          </div>
+
+                          <div className="walking-summary">
+                            <strong>4 min walking</strong>
+                            <span>Designed to minimise walking</span>
+                          </div>
+
+                          <p className="route-sub">
+                            A shorter illustrative option with a ride-hailing
+                            connection.
+                          </p>
+                        </article>
+                      </>
+                    )}
                   </div>
+
                   <div>
                     {picks}
+
                     <div className="map-weather-summary" role="status">
                       {weather ? (
                         <>
@@ -1338,7 +1636,9 @@ export default function MobilityApp({
                         </>
                       )}
                     </div>
+
                     {route?.fare && <FareDetails fare={route.fare} />}
+
                     {route?.legs.some((l) => l.mode === "walk") && (
                       <details className="walking-location-details">
                         <summary>Walking directions & live location</summary>{" "}
@@ -1359,13 +1659,16 @@ export default function MobilityApp({
                           }
                           onReroute={async (fix) => {
                             if (!data) return;
+
                             const origin = {
                               id: "gps",
                               name: "Your current location",
                               latitude: fix.latitude,
                               longitude: fix.longitude,
                             };
+
                             setBusy(true);
+
                             try {
                               const next = await plan(
                                 origin,
@@ -1378,6 +1681,7 @@ export default function MobilityApp({
                                     weather?.shade_weight_multiplier ?? 1,
                                 },
                               );
+
                               setFrom(origin);
                               setRoutes(next);
                               setSelected(next[0]?.id || "");
@@ -1390,7 +1694,9 @@ export default function MobilityApp({
                         />
                       </details>
                     )}
+
                     {mapArea}
+
                     {route && (
                       <div className="detail-panel">
                         <div className="detail-title">
@@ -1400,6 +1706,7 @@ export default function MobilityApp({
                             Save journey
                           </button>
                         </div>
+
                         <ol className="legs">
                           {route.legs.map((l, i) => (
                             <li key={i}>
@@ -1423,6 +1730,7 @@ export default function MobilityApp({
                             </li>
                           ))}
                         </ol>
+
                         <details className="record-source">
                           <summary>Route sources & estimates</summary>
                           <p>{route.warning}</p>
@@ -1434,6 +1742,7 @@ export default function MobilityApp({
                 </div>
               </>
             )}
+
             {(current === "plan" || current === "comfort") && (
               <TransportFareOptions
                 hasTaxi={pricedRoutes.some((r) =>
@@ -1442,10 +1751,13 @@ export default function MobilityApp({
                 drivingReason={drivingReason}
               />
             )}
+
             {current === "conditions" && insights("all")}
+
             {current === "explore" && (
               <>
                 {insights("accessibility")}
+
                 <div className="filter-row">
                   {["All", "Places", "Metro", "Tram", "Bus", "Parking"].map(
                     (f) => (
@@ -1459,6 +1771,7 @@ export default function MobilityApp({
                     ),
                   )}
                 </div>
+
                 <div className="explore-layout">
                   <div className="place-list">
                     {data &&
@@ -1505,6 +1818,7 @@ export default function MobilityApp({
                           <ArrowUpRight size={17} />
                         </button>
                       ))}
+
                     {data &&
                       filter === "Bus" &&
                       !data.transport_stops.some((p) => p.mode === "bus") && (
@@ -1513,13 +1827,16 @@ export default function MobilityApp({
                         </p>
                       )}
                   </div>
+
                   <div>
                     {picks}
                     {mapArea}
                   </div>
                 </div>
+
                 <div className="source-panel">
                   <h3>Know your data.</h3>
+
                   {data?.data_sources.map((s) => (
                     <p key={s.id}>
                       <strong>{s.name}</strong> · {s.licence_status}
@@ -1540,6 +1857,7 @@ export default function MobilityApp({
                       )}
                     </p>
                   ))}
+
                   <p>
                     Photography: “Doha skyline” by Haakon S. Krohn, Wikimedia
                     Commons, CC BY-SA 3.0. Displayed as cropped images. No
@@ -1550,6 +1868,7 @@ export default function MobilityApp({
                 </div>
               </>
             )}
+
             {current === "demand" && (
               <>
                 <div className="info-box">
@@ -1567,6 +1886,7 @@ export default function MobilityApp({
                     </p>
                   </div>
                 </div>
+
                 <div className="demand-grid">
                   {data?.demand_forecasts.map((d) => (
                     <article className="demand-card" key={d.id}>
@@ -1582,15 +1902,19 @@ export default function MobilityApp({
                           {d.is_demo ? "Illustrative forecast" : "Forecast"}
                         </span>
                       </div>
+
                       <h2>{d.area_name}</h2>
+
                       <p className="forecast-date">
                         <Clock size={17} />
                         {date(d.forecast_for)}
                       </p>
+
                       <p>
                         {d.price_pressure}. Consider leaving earlier or
                         comparing public transport options.
                       </p>
+
                       <dl>
                         <div>
                           <dt>Estimated wait</dt>
@@ -1609,17 +1933,20 @@ export default function MobilityApp({
                           </dd>
                         </div>
                       </dl>
+
                       <p className="data-note">
                         Source: {d.source}
                         <br />
                         Added {date(d.created_at)}
                       </p>
+
                       <Link href="/plan">
                         Compare your journey <ArrowRight size={17} />
                       </Link>
                     </article>
                   ))}
                 </div>
+
                 {data && !data.demand_forecasts.length && (
                   <div className="empty-state">
                     No demand forecasts are available in the connected dataset.
@@ -1627,6 +1954,7 @@ export default function MobilityApp({
                 )}
               </>
             )}
+
             {current === "parking" && (
               <>
                 <div className="parking-search">
@@ -1649,6 +1977,7 @@ export default function MobilityApp({
                   />
                   <span>Sorted by approximate proximity</span>
                 </div>
+
                 <div className="explore-layout">
                   <div>
                     {data?.parking_locations
@@ -1663,12 +1992,15 @@ export default function MobilityApp({
                               Date.parse(b.observed_at) -
                               Date.parse(a.observed_at),
                           )[0];
+
                         const fresh =
                           status &&
                           Date.now() - Date.parse(status.observed_at) >= 0 &&
                           Date.now() - Date.parse(status.observed_at) < 300000;
+
                         const verified =
                           status?.is_live && !status.is_demo && fresh;
+
                         return (
                           <article className="parking-card" key={p.id}>
                             <div className="route-top">
@@ -1679,33 +2011,41 @@ export default function MobilityApp({
                                   : "Availability not supplied"}
                               </span>
                             </div>
+
                             <h3>{p.name}</h3>
+
                             <p>
                               {p.parking_type} · Capacity{" "}
                               {p.capacity ?? "not supplied"}
                             </p>
+
                             <strong>
                               {meters < 1000
                                 ? `${meters} m`
                                 : `${(meters / 1000).toFixed(1)} km`}{" "}
                               straight-line distance
                             </strong>
+
                             <small>
                               Walking time requires a pedestrian route.
                             </small>
+
                             <button
                               className="text-button"
                               onClick={async () => {
                                 setFrom({ ...p, id: "parking-" + p.id });
                                 setRoutes([]);
                                 if (!data) return;
+
                                 setBusy(true);
+
                                 try {
                                   const r = await plan(p, to, data, false, {
                                     maxWalkingMinutes:
                                       prefs.max_walking_minutes,
                                     includeTaxi: false,
                                   });
+
                                   setRoutes(r);
                                   setSelected(r[0]?.id || "");
                                 } catch (e) {
@@ -1717,6 +2057,7 @@ export default function MobilityApp({
                             >
                               Show walking route <ArrowRight size={16} />
                             </button>
+
                             <p className="data-note">
                               {p.is_demo
                                 ? "Illustrative location"
@@ -1733,14 +2074,17 @@ export default function MobilityApp({
                           </article>
                         );
                       })}
+
                     {data && !data.parking_locations.length && (
                       <div className="empty-state">
                         No parking locations available.
                       </div>
                     )}
                   </div>
+
                   <div>
                     {mapArea}
+
                     {route && (
                       <div className="detail-panel">
                         <h3>Walking to {to.name}</h3>
@@ -1755,6 +2099,7 @@ export default function MobilityApp({
                 </div>
               </>
             )}
+
             {current === "saved" &&
               guard(
                 <div className="saved-grid">
@@ -1784,6 +2129,7 @@ export default function MobilityApp({
                       </div>
                     </article>
                   ))}
+
                   {!saved.length && (
                     <div className="empty-state">
                       <Bookmark size={35} />
@@ -1798,6 +2144,7 @@ export default function MobilityApp({
                   )}
                 </div>,
               )}
+
             {current === "profile" &&
               guard(
                 <form className="settings-form" onSubmit={savePreferences}>
@@ -1814,6 +2161,7 @@ export default function MobilityApp({
                       </p>
                     </div>
                   </div>
+
                   <label>
                     Full name
                     <input
@@ -1822,6 +2170,7 @@ export default function MobilityApp({
                       autoComplete="name"
                     />
                   </label>
+
                   <div className="settings-grid">
                     <label>
                       Default journey priority
@@ -1839,6 +2188,7 @@ export default function MobilityApp({
                         ))}
                       </select>
                     </label>
+
                     <label>
                       Preferred maximum walking time (minutes)
                       <input
@@ -1858,6 +2208,7 @@ export default function MobilityApp({
                         }
                       />
                     </label>
+
                     <label>
                       Budget preference (QAR)
                       <input
@@ -1877,6 +2228,7 @@ export default function MobilityApp({
                       />
                     </label>
                   </div>
+
                   <label className="check-label">
                     <input
                       type="checkbox"
@@ -1890,6 +2242,7 @@ export default function MobilityApp({
                     />
                     Prefer to avoid direct sunlight
                   </label>
+
                   <label className="check-label">
                     <input
                       type="checkbox"
@@ -1903,11 +2256,13 @@ export default function MobilityApp({
                     />
                     Prefer public transport
                   </label>
+
                   <p className="data-note">
                     The planner ranks by your chosen priority. Walking, budget
                     and sunlight settings are saved preferences; hard
                     constraints require complete provider coverage.
                   </p>
+
                   <div className="settings-actions">
                     <button className="primary" type="submit">
                       Save preferences <Check size={17} />
@@ -1923,6 +2278,7 @@ export default function MobilityApp({
                   </div>
                 </form>,
               )}
+
             {current === "auth" && (
               <div className="auth-layout">
                 <div className="auth-art">
@@ -1938,6 +2294,7 @@ export default function MobilityApp({
                     Your smarter journey.
                   </p>
                 </div>
+
                 <div className="auth-form">
                   {isDemo ? (
                     <>
@@ -1973,12 +2330,14 @@ export default function MobilityApp({
                               ? "Set a new password"
                               : "Good to see you again."}
                       </h2>
+
                       {authMode === "register" && (
                         <label>
                           Full name
                           <input name="name" required autoComplete="name" />
                         </label>
                       )}
+
                       {authMode !== "update" && (
                         <label>
                           Email
@@ -1990,6 +2349,7 @@ export default function MobilityApp({
                           />
                         </label>
                       )}
+
                       {authMode !== "reset" && (
                         <label>
                           Password
@@ -2006,6 +2366,7 @@ export default function MobilityApp({
                           />
                         </label>
                       )}
+
                       <button
                         className="primary"
                         disabled={authBusy}
@@ -2022,6 +2383,7 @@ export default function MobilityApp({
                                 : "Sign in"}
                         <ArrowRight size={17} />
                       </button>
+
                       <div className="auth-switch">
                         {["login", "register", "reset"]
                           .filter((m) => m !== authMode)
@@ -2047,6 +2409,7 @@ export default function MobilityApp({
           </div>
         )}
       </main>
+
       <footer>
         <Link href="/" className="footer-brand">
           smarter qatar<span>.</span>
@@ -2064,6 +2427,7 @@ export default function MobilityApp({
           </span>
         </div>
       </footer>
+
       <AnimatePresence>
         {message && (
           <motion.div
