@@ -1,4 +1,6 @@
 "use client";
+import type { MobilityContext } from "@/types/mobility-context";
+import { dataStatus, qatarTimestamp } from "@/services/provenance";
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -36,6 +38,7 @@ export default function MobilityMap({
   simulatedPosition,
   onConceptDecision,
   showConceptRoute = false,
+  mobility,
 }: {
   data: Collection;
   from: Location;
@@ -51,6 +54,7 @@ export default function MobilityMap({
   simulatedPosition?: [number, number];
   onConceptDecision?: () => void;
   showConceptRoute?: boolean;
+  mobility?: MobilityContext;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
@@ -61,6 +65,11 @@ export default function MobilityMap({
   const conceptDecision = useRef(onConceptDecision);
   conceptDecision.current = onConceptDecision;
   const simulationMarker = useRef<L.CircleMarker | null>(null);
+  const [contextLayers, setContextLayers] = useState({
+    access: false,
+    traffic: false,
+    vehicles: false,
+  });
   const [showShade, setShowShade] = useState(true);
   const [failed, setFailed] = useState(false);
   const [follow, setFollow] = useState(true);
@@ -207,7 +216,8 @@ export default function MobilityMap({
       el.textContent = label;
       el.setAttribute("aria-label", p.name);
       const content = document.createElement("div");
-      content.textContent = p.name + (p.is_demo ? " · Demo" : "");
+      content.textContent =
+        p.name + (p.is_demo ? " · Illustrative record" : "");
       const marker = L.marker(point(p), {
         icon: L.divIcon({
           html: el,
@@ -403,7 +413,7 @@ export default function MobilityMap({
       )
         continue;
       const content = document.createElement("div");
-      content.textContent = `${shadeLevel(row.shade_level)} shade · ${row.is_demo ? "SYNTHETIC DEMO" : "Imported categorical observation; verification unavailable"}. ${row.data_source || "Source unspecified"}. Coverage percentage, observation time and time-of-day validity unavailable.`;
+      content.textContent = `${shadeLevel(row.shade_level)} shade · ${row.is_demo ? "Illustrative" : "Categorical reference"}. ${data.data_sources.find((s) => s.id === row.data_source)?.name || row.data_source || "Source not supplied"}. Coverage percentage, observation time and time-of-day validity unavailable.`;
       L.polyline(
         [
           [row.start_latitude, row.start_longitude],
@@ -425,7 +435,7 @@ export default function MobilityMap({
       for (const slice of shadeSlices(leg.coordinates, data.shade_segments)) {
         const text = document.createElement("div");
         text.textContent = slice.row
-          ? `Walking path matched to ${shadeLevel(slice.row.shade_level)} shade · ${slice.row.is_demo ? "synthetic demo" : "categorical spatial estimate"}. 5 m spatial tolerance; not a heat measurement.`
+          ? `Walking path matched to ${shadeLevel(slice.row.shade_level)} shade · ${slice.row.is_demo ? "illustrative" : "categorical spatial estimate"}. 5 m spatial tolerance; not a heat measurement.`
           : "No shade information matched to this walking section.";
         L.polyline(
           [
@@ -446,6 +456,74 @@ export default function MobilityMap({
       layer.remove();
     };
   }, [showShade, data.shade_segments, route]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !mobility) return;
+    const layer = L.featureGroup().addTo(m);
+    const marker = (
+      lat: number | null,
+      lon: number | null,
+      title: string,
+      detail: string,
+      color: string,
+    ) => {
+      if (
+        typeof lat !== "number" ||
+        typeof lon !== "number" ||
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
+      )
+        return;
+      const content = document.createElement("div");
+      const heading = document.createElement("strong");
+      heading.textContent = title;
+      const text = document.createElement("p");
+      text.textContent = detail;
+      content.append(heading, text);
+      L.circleMarker([lat, lon], {
+        radius: 7,
+        color: "white",
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 1,
+      })
+        .bindPopup(content)
+        .addTo(layer);
+    };
+    if (contextLayers.access)
+      mobility.accessibility_features.forEach((r) =>
+        marker(
+          r.latitude,
+          r.longitude,
+          r.feature_name ?? "Accessibility feature",
+          `${dataStatus(r)} · ${r.is_step_free === true ? "Step-free reported" : "Access details in record"}. ${r.notes ?? ""}`,
+          "#386fbe",
+        ),
+      );
+    if (contextLayers.traffic)
+      mobility.traffic_incidents.forEach((r) =>
+        marker(
+          r.latitude,
+          r.longitude,
+          r.location_description ?? "Traffic report",
+          `${dataStatus(r)} · ${r.description ?? ""} · ${qatarTimestamp(r.recorded_at)}`,
+          "#d17c35",
+        ),
+      );
+    if (contextLayers.vehicles)
+      mobility.real_time_vehicle_telemetry.forEach((r) =>
+        marker(
+          r.latitude,
+          r.longitude,
+          r.line_name ?? "Vehicle snapshot",
+          `${dataStatus(r)} · ${r.previous_stop ?? ""} → ${r.next_stop ?? ""} · ${qatarTimestamp(r.last_updated)}. ${r.note ?? ""}`,
+          "#805eb5",
+        ),
+      );
+    return () => {
+      layer.remove();
+    };
+  }, [mobility, contextLayers]);
   return (
     <div className="map-shell">
       <div
@@ -497,15 +575,37 @@ export default function MobilityMap({
               <span style={{ color: shadeColor("high") }}>● High</span>
               <span style={{ color: shadeColor("medium") }}>● Medium</span>
               <span style={{ color: shadeColor("low") }}>● Low</span>
-              <span style={{ color: shadeColor("unknown") }}>● Unknown</span>
+              <span style={{ color: shadeColor("unknown") }}>● Not mapped</span>
               <small>
                 {data.shade_segments.length} segments ·{" "}
                 {data.shade_segments.some((r) => r.is_demo)
-                  ? "includes SYNTHETIC data"
-                  : "imported observations; not live shade"}
+                  ? "illustrative observations"
+                  : "categorical observations"}
               </small>
             </div>
           )}
+        </div>
+      )}
+      {mobility && !conceptOnly && (
+        <div className="map-context-controls" aria-label="City map layers">
+          {(
+            [
+              ["access", "Accessibility"],
+              ["traffic", "Traffic"],
+              ["vehicles", "Vehicles"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              type="button"
+              aria-pressed={contextLayers[key]}
+              key={key}
+              onClick={() =>
+                setContextLayers((s) => ({ ...s, [key]: !s[key] }))
+              }
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
       {livePosition && (
@@ -533,11 +633,15 @@ export default function MobilityMap({
         <span className="map-demo">
           {conceptOnly
             ? "Hypothetical entrance, exit and passage · do not follow"
-            : route.legs.some((l) => !l.geometry || l.geometry === "schematic")
-              ? "Unverified segment geometry hidden · stations shown only"
-              : route.isDemo
-                ? "Sample endpoints · road-following walk"
-                : "Estimated journey · mapped walking paths"}
+            : route.legs.some((l) => l.geometry === "concept")
+              ? "Dataset corridor preview · not live navigation"
+              : route.legs.some(
+                    (l) => !l.geometry || l.geometry === "schematic",
+                  )
+                ? "Unverified segment geometry hidden · stations shown only"
+                : route.isDemo
+                  ? "Sample endpoints · road-following walk"
+                  : "Estimated journey · mapped walking paths"}
         </span>
       )}
     </div>

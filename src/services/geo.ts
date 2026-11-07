@@ -48,6 +48,7 @@ export interface WalkingProvider {
     options?: {
       avoidPolygons?: [number, number][][];
       preferShade?: boolean;
+      shadeWeightMultiplier?: number;
       shadeSegments?: import("./shade").ShadeObservation[];
     },
   ): Promise<WalkingResult>;

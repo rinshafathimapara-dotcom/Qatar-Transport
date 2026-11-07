@@ -1,79 +1,127 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
-export interface DemoShadeRoute {
-  id: string;
-  route_name: string;
-  area_name: string;
-  origin_name: string;
-  destination_name: string;
-  distance_m: number;
-  walking_minutes: number;
-  shade_percent: number;
-  exposed_percent: number;
-  priority: "balanced" | "shade";
-  geometry: { type: "LineString"; coordinates: [number, number][] };
-  is_demo: boolean;
-}
-export function validDemoRoute(value: unknown): value is DemoShadeRoute {
+import { distance } from "./geo";
+import type { MobilityRows } from "@/types/mobility-context";
+import type { Journey, Location, Rows } from "@/types/database";
+export type ShadeCorridor = MobilityRows["shade_demo_routes"];
+export function validShadeCorridor(value: unknown): value is ShadeCorridor {
   if (!value || typeof value !== "object") return false;
-  const r = value as DemoShadeRoute;
+  const r = value as ShadeCorridor;
   return (
-    r.is_demo === true &&
-    ["id", "route_name", "area_name", "origin_name", "destination_name"].every(
-      (k) => typeof (r as unknown as Record<string, unknown>)[k] === "string",
-    ) &&
-    ["balanced", "shade"].includes(r.priority) &&
-    Number.isFinite(r.walking_minutes) &&
-    r.walking_minutes > 0 &&
-    r.walking_minutes <= 20 &&
-    Number.isFinite(r.distance_m) &&
-    r.distance_m > 0 &&
-    Number.isFinite(r.shade_percent) &&
-    r.shade_percent >= 0 &&
-    r.shade_percent <= 100 &&
-    r.geometry?.type === "LineString" &&
-    Array.isArray(r.geometry.coordinates) &&
-    r.geometry.coordinates.length >= 2 &&
-    r.geometry.coordinates.length <= 10000 &&
-    r.geometry.coordinates.every(
-      (p) =>
-        Array.isArray(p) &&
-        p.length === 2 &&
-        Number.isFinite(p[0]) &&
-        Number.isFinite(p[1]) &&
-        p[0] >= 50 &&
-        p[0] <= 52.5 &&
-        p[1] >= 24 &&
-        p[1] <= 27,
-    )
+    typeof r.id === "string" &&
+    typeof r.route_name === "string" &&
+    typeof r.corridor_group === "string" &&
+    typeof r.optimization_profile === "string" &&
+    typeof r.total_walking_distance_m === "number" &&
+    r.total_walking_distance_m > 0 &&
+    typeof r.estimated_walking_duration_min === "number" &&
+    r.estimated_walking_duration_min > 0 &&
+    typeof r.shade_coverage_percent === "number" &&
+    r.shade_coverage_percent >= 0 &&
+    r.shade_coverage_percent <= 100 &&
+    Array.isArray(r.segment_ids) &&
+    r.segment_ids.length > 0 &&
+    r.segment_ids.every((id) => typeof id === "string")
   );
 }
-export async function fetchDemoShadeRoutes(): Promise<DemoShadeRoute[]> {
-  if (!supabase)
+export function corridorJourney(
+  row: ShadeCorridor,
+  all: Rows["shade_segments"][],
+  limit = 20,
+): {
+  from: Location;
+  to: Location;
+  route: Journey;
+  segments: Rows["shade_segments"][];
+} {
+  if (!validShadeCorridor(row))
     throw new Error(
-      "Supabase is not configured. Use the local demonstration below.",
+      "This corridor has incomplete route metrics or segment references.",
     );
-  // Optional teammate-supplied extension, validated at this boundary; the 15-table contract is unchanged.
-  const client: SupabaseClient = supabase;
-  const { data, error } = await client
-    .from("demo_shade_routes")
-    .select(
-      "id,route_name,area_name,origin_name,destination_name,distance_m,walking_minutes,shade_percent,exposed_percent,priority,geometry,is_demo",
+  if (
+    row.estimated_walking_duration_min! >
+    (Number.isFinite(limit) ? Math.min(20, Math.max(1, limit)) : 20)
+  )
+    throw new Error("This corridor exceeds your walking budget.");
+  const byId = new Map(all.map((s) => [s.id, s])),
+    segments = row.segment_ids!.map((id) => byId.get(id));
+  if (segments.some((s) => !s))
+    throw new Error(
+      "Some corridor segments are missing from the current data view.",
+    );
+  const list = segments as Rows["shade_segments"][];
+  if (
+    list.some(
+      (s) =>
+        ![
+          s.start_latitude,
+          s.start_longitude,
+          s.end_latitude,
+          s.end_longitude,
+        ].every(Number.isFinite),
     )
-    .eq("is_demo", true)
-    .order("area_name")
-    .limit(200)
-    .abortSignal(AbortSignal.timeout(12000));
-  if (error)
-    throw new Error(
-      error.code === "PGRST205"
-        ? "The optional demo_shade_routes table is not available yet. The local presentation works without it."
-        : `Shade demonstration could not load (${error.code}). Check the table contract and read permissions.`,
-    );
-  const rows = data ?? [];
-  if (rows.some((r) => !validDemoRoute(r)))
-    throw new Error(
-      "Some supplied shade demo routes have invalid geometry, missing fields or exceed the 20-minute walking budget.",
-    );
-  return rows;
+  )
+    throw new Error("A corridor segment has invalid coordinates.");
+  const first = list[0],
+    last = list.at(-1)!;
+  const lengths = list.map((s) =>
+    distance(
+      { latitude: s.start_latitude, longitude: s.start_longitude },
+      { latitude: s.end_latitude, longitude: s.end_longitude },
+    ),
+  );
+  const totalLength = lengths.reduce((a, b) => a + b, 0) || 1;
+  // Each supplied segment remains separate: never bridge a missing connection.
+  return {
+    from: {
+      id: row.id + "-from",
+      name: row.route_name.split(" -> ")[0] || "Corridor start",
+      latitude: first.start_latitude,
+      longitude: first.start_longitude,
+      is_demo: row.is_demo !== false,
+    },
+    to: {
+      id: row.id + "-to",
+      name:
+        row.route_name.split(" -> ")[1]?.replace(/\s*\(.*/, "") ||
+        "Corridor destination",
+      latitude: last.end_latitude,
+      longitude: last.end_longitude,
+      is_demo: row.is_demo !== false,
+    },
+    segments: list,
+    route: {
+      id: row.id,
+      title: row.route_name,
+      minutes: row.estimated_walking_duration_min!,
+      distance: row.total_walking_distance_m!,
+      walking: row.total_walking_distance_m!,
+      cost: null,
+      transfers: 0,
+      shade: row.shade_coverage_percent,
+      isDemo: row.is_demo !== false,
+      isApproximate: true,
+      shadeDetails: {
+        shadedDistance: row.shaded_distance_m,
+        exposedDistance: row.exposed_distance_m,
+        basis:
+          "Supabase route summary; segment-level numeric fractions are not supplied",
+      },
+      source:
+        "Supabase shade_demo_routes with ordered shade_segments references",
+      warning:
+        "Dataset corridor preview. Shade coverage, distance and walking time are supplied route-summary estimates. Segment coordinates are displayed individually; they are not snapped or verified for live pedestrian navigation.",
+      legs: list.map((s, i) => ({
+        mode: "walk",
+        name: `${s.shade_level} shade · section ${i + 1}`,
+        minutes:
+          (row.estimated_walking_duration_min! * lengths[i]) / totalLength,
+        distance: lengths[i],
+        coordinates: [
+          [s.start_longitude, s.start_latitude],
+          [s.end_longitude, s.end_latitude],
+        ],
+        geometry: "concept",
+        environment: "outdoor",
+      })),
+    },
+  };
 }

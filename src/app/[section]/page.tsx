@@ -10,6 +10,7 @@ export default async function Page({
     ![
       "plan",
       "explore",
+      "conditions",
       "comfort",
       "demand",
       "parking",

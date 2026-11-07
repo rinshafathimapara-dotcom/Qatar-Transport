@@ -1,3 +1,4 @@
+import { readPages } from "./records";
 import { supabase, supabaseConfig } from "@/lib/supabase";
 import { demo } from "@/data/demo";
 import type { Collection } from "@/types/database";
@@ -28,11 +29,22 @@ export async function loadDataset({
   const names = Object.keys(datasetColumns) as (keyof Collection)[];
   const entries = await Promise.all(
     names.map(async (name) => {
-      let query = supabase!.from(name).select(datasetColumns[name]);
-      if (!includeDemo && demoTables.has(name))
-        query = query.filter("is_demo", "eq", false);
-      const { data, error } = await query.limit(2000);
-      if (error) throw new Error(`${name}: ${error.message}`);
+      const data = await readPages(async (from, to) => {
+        let query = supabase!
+          .from(name)
+          .select(datasetColumns[name])
+          .order("id")
+          .range(from, to);
+        if (!includeDemo && demoTables.has(name))
+          query = query.filter("is_demo", "eq", false);
+        const result = await query.abortSignal(AbortSignal.timeout(15000));
+        return {
+          data: result.data as unknown as { id: string }[] | null,
+          error: result.error,
+        };
+      }).catch((error) => {
+        throw new Error(`${name}: ${error.message}`);
+      });
       return [name, data] as const;
     }),
   );

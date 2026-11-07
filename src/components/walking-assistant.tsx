@@ -46,6 +46,14 @@ export default function WalkingAssistant({
     [clock, setClock] = useState(0);
   const activeRoute = useRef(route);
   activeRoute.current = route;
+  const canNavigate = route.legs.every((l) => l.geometry !== "concept");
+  useEffect(() => {
+    if (!canNavigate && tracking) {
+      setTracking(false);
+      setFix(null);
+      onPosition(null);
+    }
+  }, [canNavigate, tracking, onPosition]);
   const [walked, setWalked] = useState(0);
   const previousFix = useRef<LiveFix | null>(null);
   const decisions = useRef(new Set<string>()),
@@ -161,6 +169,25 @@ export default function WalkingAssistant({
   const indoors = route.legs
     .filter((l) => l.environment === "indoor")
     .reduce((n, l) => n + l.minutes, 0);
+  if (!canNavigate)
+    return (
+      <div className="walking-assistant">
+        <span className="eyebrow">SELECTED CORRIDOR</span>
+        <h3>Preview the walking sections</h3>
+        <p className="data-note">
+          This dataset corridor shows the linked segments and supplied route
+          estimates. Plan a road-following pedestrian journey to use GPS
+          navigation.
+        </p>
+        <button
+          className="secondary"
+          disabled
+          title="Live navigation requires a mapped pedestrian route"
+        >
+          Start my journey
+        </button>
+      </div>
+    );
   return (
     <div className="walking-assistant">
       <div className="walking-assistant-heading">
@@ -170,6 +197,12 @@ export default function WalkingAssistant({
         </div>
         <button
           className="secondary"
+          disabled={route.legs.some((l) => l.geometry === "concept")}
+          title={
+            route.legs.some((l) => l.geometry === "concept")
+              ? "Live navigation requires a mapped pedestrian route"
+              : "Start browser GPS tracking"
+          }
           onClick={() => {
             setTracking(!tracking);
             if (!tracking) {
@@ -186,6 +219,12 @@ export default function WalkingAssistant({
           {tracking ? "Stop journey" : "Start my journey"}
         </button>
       </div>
+      {route.legs.some((l) => l.geometry === "concept") && (
+        <p className="data-note">
+          This is a dataset corridor preview. Plan a road-following walking
+          journey to start GPS navigation.
+        </p>
+      )}
       <p className="data-note">
         Your blue dot is your browser's GPS estimate, not a guaranteed road
         position. Tracking stays in this tab and stops when you leave the

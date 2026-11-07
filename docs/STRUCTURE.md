@@ -91,3 +91,11 @@ Shade additions:
 - `public/images/planner-sunset.jpg`: original generated decorative planner background.
 - `docs/SHADE-INTEGRATION.md`: calculation methodology, limitations and backend handoff.
 - `tests/shade.test.ts`, `tests/shade-demo.test.ts`: matching, calculation and adapter validation checks.
+
+v3 additions:
+- `src/types/mobility-context.ts`: observed weather, accessibility, telemetry, traffic, analytics and corridor record shapes.
+- `src/services/mobility-context.ts`: independent, error-tolerant v3 dataset loading.
+- `src/services/records.ts`: stable pagination and ID deduplication.
+- `src/services/provenance.ts`: compact source/status labels and nullable display helpers.
+- `src/components/mobility-insights.tsx`: city conditions and weather selector.
+- `docs/BACKEND-V3.md`: current schema observations, limitations and backend checks.

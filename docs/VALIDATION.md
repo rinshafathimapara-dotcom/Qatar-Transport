@@ -74,3 +74,13 @@
 - Production-app browser checks passed: local alternative selection, shade-overlay toggle, optional-table error handling, generated planner background, desktop and 390px mobile layouts without horizontal overflow. No JavaScript page errors were reported.
 - Actual `/api/walk` check: standard route 9 minutes / 664 m; shade-weighted alternative 11 minutes / 801 m using the synthetic fixture on the connected OSM graph. No invented straight-line connection was used.
 - No backend writes, migrations, RLS changes, private-data changes or deployment were performed. Verified numeric shade coverage, survey validation and time-dependent shade remain unavailable.
+
+## v3 integration checks
+
+- All 16 explicit public dataset selects succeeded against the current Supabase project, including the six new v3 tables and the expanded schedule fields.
+- Visible ID joins had zero unresolved route/stop, schedule/stop, parking/status, weather/source and accessibility/source references. All 20 shade-corridor rows resolved their segment IDs.
+- Pagination tests cover retrieval of 1,724 rows, duplicate IDs, failures and page-limit exhaustion. Status tests cover conflicting source metadata and null metrics. Corridor tests cover the v3 contract, missing segments, independent geometry across gaps and walking-budget enforcement. Weather weighting tests cover valid and invalid multipliers.
+- Management schema/RLS access was denied and the OpenAPI schema endpoint returned 401. Catalog constraints and authenticated/private write policies are not certified. No schema/RLS changes or test writes were made.
+- The production browser passed weather reference selection (41°C / feels-like 45°C high-heat scenario), actual v3 corridor selection with 92.5% supplied coverage, disabled live GPS on corridor previews, and accessibility/traffic/vehicle map toggles. All selected data was fetched from Supabase, without mocked database responses.
+- Desktop (1440px), tablet (1024px), and mobile (390px) layout checks passed with no horizontal overflow. No JavaScript page errors were reported. A loading race was fixed: corridor preview controls wait until their referenced shade segments have loaded.
+- All 12 test files passed and the production build compiled with TypeScript checks.

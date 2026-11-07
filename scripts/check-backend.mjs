@@ -33,6 +33,12 @@ const tables = [
   "shade_segments",
   "demand_forecasts",
   "data_sources",
+  "shade_demo_routes",
+  "weather_conditions",
+  "accessibility_features",
+  "real_time_vehicle_telemetry",
+  "traffic_incidents",
+  "historical_journey_analytics",
 ];
 // Only count public dataset rows. Never print keys, records or personal data.
 const results = await Promise.all(

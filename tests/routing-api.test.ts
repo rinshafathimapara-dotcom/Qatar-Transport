@@ -87,3 +87,17 @@ test("shade-aware walking API uses connected road geometry and reports physical 
   );
   assert.equal(invalid.status, 400);
 });
+
+test("weather shade multiplier is accepted within bounds and invalid values are rejected", async () => {
+  const fixture = (await import("../src/data/shade-presentation.json")).default;
+  const body = {
+    from: fixture.from,
+    to: fixture.to,
+    preferShade: true,
+    shadeSegments: fixture.segments,
+  };
+  const weighted = await walk(request({ ...body, shadeWeightMultiplier: 3.5 }));
+  assert.equal(weighted.status, 200);
+  const invalid = await walk(request({ ...body, shadeWeightMultiplier: 99 }));
+  assert.equal(invalid.status, 400);
+});

@@ -13,6 +13,7 @@ export async function POST(req: Request) {
       to,
       avoidPolygons = [],
       preferShade = false,
+      shadeWeightMultiplier = 1,
       shadeSegments = [],
     } = await req.json();
     const valid = (p: { latitude: number; longitude: number }) =>
@@ -50,6 +51,9 @@ export async function POST(req: Request) {
       );
     if (
       typeof preferShade !== "boolean" ||
+      !Number.isFinite(shadeWeightMultiplier) ||
+      shadeWeightMultiplier < 1 ||
+      shadeWeightMultiplier > 4 ||
       !Array.isArray(shadeSegments) ||
       shadeSegments.length > 2000 ||
       shadeSegments.some(
@@ -130,9 +134,12 @@ export async function POST(req: Request) {
                   (n, s) =>
                     n +
                     s.metres *
-                      { high: 1, medium: 2, low: 3, unknown: 3 }[
-                        shadeLevel(s.row?.shade_level)
-                      ],
+                      {
+                        high: 1,
+                        medium: Math.min(4, 2 * shadeWeightMultiplier),
+                        low: Math.min(4, 3 * shadeWeightMultiplier),
+                        unknown: Math.min(4, 3 * shadeWeightMultiplier),
+                      }[shadeLevel(s.row?.shade_level)],
                   0,
                 ) / total
               : 3;

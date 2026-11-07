@@ -146,3 +146,7 @@ Open `/demo` to show the judges an accelerated walking journey with an automatic
 Open **Comfortable routes** (`/comfort`) to compare two local synthetic-shade presentations on actual mapped walking geometry. Click a route to show it on the existing map; use **Hide/Show shade overlay** to toggle high/medium/low/unknown colours. In connected mode, **Include demo records** exposes Supabase records that are marked synthetic. Route cards distinguish categorical spatial matches from numeric synthetic-model percentages. See [shade integration and the backend handoff](docs/SHADE-INTEGRATION.md) for calculation details and remaining verified-data requirements.
 
 The journey planner (`/plan`) now uses an original AI-generated Doha-inspired sunset background, stored locally at `public/images/planner-sunset.jpg`. It is decorative artwork, not geographic data. The home video is preserved.
+
+### v3 city information
+
+Open **City conditions** (`/conditions`) for the connected weather/heat references, accessibility, traffic, vehicle snapshots and historical journey metrics. The planner also offers the weather selector. **Comfortable routes** now loads `shade_demo_routes` and joins its ordered segment IDs to the existing shade table; the earlier missing-table message is obsolete. Source/status badges follow backend provenance. See [the v3 integration report](docs/BACKEND-V3.md) for observed columns, public query checks and the remaining RLS/provenance confirmations.

@@ -1,3 +1,4 @@
+import type { MobilityRows } from "./mobility-context";
 export type Json =
   | string
   | number
@@ -6,7 +7,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 type Base = { id: string; created_at: string };
-export interface Rows {
+export interface Rows extends MobilityRows {
   admin_users: { user_id: string; created_at: string };
   profiles: Base & { full_name: string; email: string };
   user_preferences: Base & {
@@ -62,7 +63,11 @@ export interface Rows {
     to_stop_id: string;
     departure_time: string;
     arrival_time: string;
-    days_of_week: Json[];
+    days_of_week: Json[] | null;
+    valid_from?: string | null;
+    valid_until?: string | null;
+    source?: string | null;
+    is_demo?: boolean | null;
   };
   parking_locations: {
     id: string;
@@ -209,6 +214,11 @@ export type Journey = {
   transfers: number;
   shade: number | null;
   shadeInfo?: import("@/services/shade").ShadeSummary;
+  shadeDetails?: {
+    shadedDistance: number | null;
+    exposedDistance: number | null;
+    basis: string;
+  };
   isDemo: boolean;
   isApproximate?: boolean;
   legs: Leg[];

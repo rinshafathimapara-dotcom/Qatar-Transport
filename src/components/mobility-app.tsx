@@ -1,6 +1,12 @@
 "use client";
+import MobilityInsights from "./mobility-insights";
+import {
+  emptyMobilityContext,
+  type MobilityContext,
+} from "@/types/mobility-context";
+import { loadMobilityContext } from "@/services/mobility-context";
 import ShadeDemoPanel from "./shade-demo-panel";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -102,7 +108,32 @@ export default function MobilityApp({
 }) {
   const router = useRouter(),
     reduced = useReducedMotion();
-  const [includeDemo, setIncludeDemo] = useState(false);
+  const [includeDemo, setIncludeDemo] = useState(true);
+  const [city, setCity] = useState<MobilityContext>(emptyMobilityContext);
+  const cityRequest = useRef(0);
+  const [cityLoading, setCityLoading] = useState(true),
+    [cityIssues, setCityIssues] = useState<string[]>([]),
+    [weatherId, setWeatherId] = useState("");
+  const refreshCity = useCallback(() => {
+    const request = ++cityRequest.current;
+    setCityLoading(true);
+    loadMobilityContext(includeDemo)
+      .then((result) => {
+        if (request !== cityRequest.current) return;
+        setCity(result.data);
+        setCityIssues(result.issues);
+      })
+      .finally(() => {
+        if (request === cityRequest.current) setCityLoading(false);
+      });
+  }, [includeDemo]);
+  useEffect(() => {
+    refreshCity();
+  }, [refreshCity]);
+  const weather =
+    city.weather_conditions.find((r) => r.id === weatherId) ??
+    city.weather_conditions.find((r) => r.is_demo === false) ??
+    city.weather_conditions[0];
   const [presentationShade, setPresentationShade] = useState<
     import("@/services/shade").ShadeObservation[] | null
   >(null);
@@ -147,12 +178,15 @@ export default function MobilityApp({
     [fullName, setFullName] = useState(""),
     [authMode, setAuthMode] = useState("login"),
     [authBusy, setAuthBusy] = useState(false);
+  const datasetRequest = useRef(0);
   const notify = useCallback((s: string) => setMessage(s), []);
   const signed = !!user || (isDemo && demoUser);
   const refresh = useCallback(() => {
+    const request = ++datasetRequest.current;
     setDataError("");
     loadDataset({ includeDemo })
       .then((d) => {
+        if (request !== datasetRequest.current) return;
         setData(d);
         const locations = [...d.places, ...d.transport_stops];
         if (!isDemo && locations.length) {
@@ -160,7 +194,9 @@ export default function MobilityApp({
           setTo(locations[1] || locations[0]);
         }
       })
-      .catch((e) => setDataError(e.message));
+      .catch((e) => {
+        if (request === datasetRequest.current) setDataError(e.message);
+      });
   }, [includeDemo]);
   useEffect(refresh, [refresh]);
   useEffect(() => {
@@ -261,6 +297,18 @@ export default function MobilityApp({
     ),
     route = sorted.find((r) => r.id === selected) || sorted[0];
   const current = initialSection;
+  const insights = (mode: "weather" | "all" | "traffic" | "accessibility") => (
+    <MobilityInsights
+      data={city}
+      sources={data?.data_sources ?? []}
+      loading={cityLoading}
+      issues={cityIssues}
+      onRetry={refreshCity}
+      mode={mode}
+      weatherId={weather?.id}
+      onWeather={(r) => setWeatherId(r.id)}
+    />
+  );
   async function search() {
     if (!data) return;
     setBusy(true);
@@ -269,6 +317,7 @@ export default function MobilityApp({
     try {
       const result = await plan(from, to, data, isDemo, {
         maxWalkingMinutes: prefs.max_walking_minutes,
+        shadeWeightMultiplier: weather?.shade_weight_multiplier ?? 1,
       });
       setRoutes(result);
       setSelected(rank(result, priority)[0]?.id || "");
@@ -588,6 +637,7 @@ export default function MobilityApp({
       to={to}
       route={route}
       showConceptRoute={!!presentationShade}
+      mobility={city}
       livePosition={livePosition}
       passages={route ? relevantPassages(route, indoorPassages) : []}
       selectedPassage={selectedPassage}
@@ -703,6 +753,7 @@ export default function MobilityApp({
             </AnimatePresence>
           </div>
           <Link href="/saved">Saved journeys</Link>
+          <Link href="/conditions">City conditions</Link>
           <Link href="/demo">Walking demo</Link>
           <Link href="/demand" className="nav-alert">
             <Bell size={17} />
@@ -733,14 +784,14 @@ export default function MobilityApp({
                 ? "BACKEND NEEDS ATTENTION"
                 : data
                   ? includeDemo
-                    ? "SUPABASE · DEMO RECORDS INCLUDED"
+                    ? "SUPABASE · ALL DATASET RECORDS"
                     : "CONNECTED TO SUPABASE"
                   : "CONNECTING TO SUPABASE"}
           </span>
           <p>
             {isDemo
               ? "A working prototype. Sample journeys, no live feeds."
-              : "Imported data · provider availability may vary."}
+              : "Source and status are shown with each dataset."}
           </p>
           {!isDemo && (
             <button
@@ -752,7 +803,9 @@ export default function MobilityApp({
                 setRoutes([]);
               }}
             >
-              {includeDemo ? "Hide demo records" : "Include demo records"}
+              {includeDemo
+                ? "Reference records only"
+                : "Show all dataset records"}
             </button>
           )}
           <Link href="/explore">
@@ -776,11 +829,10 @@ export default function MobilityApp({
                   Supabase connected · no destinations in this data view
                 </strong>
                 <p>
-                  No destinations or stops match the current data filter.
-                  Demo-labelled records are hidden by default; try “Include demo
-                  records” above. If the view stays empty, check imports and
-                  public read policies. Map selection and walking within the
-                  Doha pilot remain available.
+                  No destinations or stops match the current data filter. Choose
+                  “Show all dataset records” to include the full dataset. If the
+                  view stays empty, check imports and public read policies. Map
+                  selection and walking within the Doha pilot remain available.
                 </p>
               </div>
             </div>
@@ -860,6 +912,7 @@ export default function MobilityApp({
                 <span className="art-spark">✳</span>
               </div>
             </section>
+            <div className="home-conditions">{insights("weather")}</div>
             <section
               className="stats-row"
               aria-label="Current dataset statistics"
@@ -980,6 +1033,7 @@ export default function MobilityApp({
                 {
                   {
                     plan: "Find your better way.",
+                    conditions: "A clearer picture of your city.",
                     explore: "A little closer to Qatar.",
                     comfort: "More shade. A gentler journey.",
                     demand: "A heads-up for your journey.",
@@ -993,7 +1047,9 @@ export default function MobilityApp({
               <p>
                 {
                   {
-                    plan: "Compare what matters to you. All estimates and data limitations are shown.",
+                    plan: "Compare walking, public transport and comfort for your next journey.",
+                    conditions:
+                      "Weather, accessibility, traffic and transport information from your team’s datasets.",
                     explore:
                       "Discover the places and connections in the available dataset.",
                     comfort:
@@ -1013,6 +1069,7 @@ export default function MobilityApp({
             {(current === "plan" || current === "comfort") && (
               <>
                 {planner}
+                {insights("weather")}
                 <div className="priority-row">
                   <span>Your priority</span>
                   {priorities.map((p) => (
@@ -1062,6 +1119,8 @@ export default function MobilityApp({
                   )}
                 {current === "comfort" && (
                   <ShadeDemoPanel
+                    rows={city.shade_demo_routes}
+                    segments={data?.shade_segments ?? []}
                     maxWalkingMinutes={walkingLimit(prefs.max_walking_minutes)}
                     onShow={(a, b, r, segments) => {
                       setPresentationShade(segments);
@@ -1070,27 +1129,10 @@ export default function MobilityApp({
                       setRoutes([r]);
                       setSelected(r.id);
                       notify(
-                        "Synthetic shade demonstration selected. Review the map and source labels below.",
+                        "Corridor selected. View the linked shade segments and route summary below.",
                       );
                     }}
                   />
-                )}
-                {current === "comfort" && (
-                  <div className="info-box">
-                    <Sun size={22} />
-                    <div>
-                      <strong>
-                        {isDemo
-                          ? "Comfort comparison · demonstration"
-                          : "Shade observations · spatial estimate"}
-                      </strong>
-                      <p>
-                        {isDemo
-                          ? "Walking follows mapped roads and paths. The shade presentation above uses explicitly synthetic labels and a documented coverage model; it does not measure heat protection."
-                          : `${data?.shade_segments.length ?? 0} shade segments loaded in the current data mode. Switch on Shade overlay on the map. High/medium/low labels are spatially matched to walking paths; numeric percentages stay unknown without numeric coverage. Enable demo records to inspect supplied synthetic observations.`}
-                      </p>
-                    </div>
-                  </div>
                 )}
                 <div className="journey-layout">
                   <div className="route-options">
@@ -1101,9 +1143,8 @@ export default function MobilityApp({
                         <Compass size={35} />
                         <h3>Your next journey starts here.</h3>
                         <p>
-                          Select two places and find your journey. Demo coverage
-                          is limited to central Doha and the illustrative Katara
-                          corridor.
+                          Choose two places or select points on the map. Walking
+                          follows the available pedestrian network.
                         </p>
                       </div>
                     ) : (
@@ -1124,10 +1165,10 @@ export default function MobilityApp({
                             </span>
                             <span>
                               {r.isDemo
-                                ? "DEMO"
+                                ? "Illustrative"
                                 : r.isApproximate
-                                  ? "MVP APPROXIMATION"
-                                  : "ESTIMATE"}
+                                  ? "Route estimate"
+                                  : "Estimate"}
                             </span>
                           </div>
                           <h3>{r.title}</h3>
@@ -1138,7 +1179,7 @@ export default function MobilityApp({
                             </strong>
                             <span>
                               {r.cost === null
-                                ? "Fare unknown"
+                                ? "Fare not supplied"
                                 : r.cost === 0
                                   ? "Free"
                                   : `QAR ${r.cost}`}
@@ -1155,7 +1196,9 @@ export default function MobilityApp({
                                 ) : (
                                   <TrainFront size={17} />
                                 )}
-                                <small>{l.minutes}′</small>
+                                <small>
+                                  {Math.round(l.minutes * 10) / 10}′
+                                </small>
                                 {j < r.legs.length - 1 && (
                                   <ArrowRight size={13} />
                                 )}
@@ -1164,10 +1207,8 @@ export default function MobilityApp({
                           </div>
                           <div className="walking-summary">
                             <strong>
-                              {r.legs
-                                .filter((l) => l.mode === "walk")
-                                .reduce((n, l) => n + l.minutes, 0)}{" "}
-                              min on foot
+                              {Math.round(walkingMinutes(r) * 10) / 10} min on
+                              foot
                             </strong>
                             <span>
                               {r.legs.filter((l) => l.mode === "walk").length}{" "}
@@ -1177,7 +1218,7 @@ export default function MobilityApp({
                             <span>
                               {r.legs.some((l) => l.environment === "indoor")
                                 ? "Includes a mapped indoor passage"
-                                : "Outdoor walking · shade unverified"}
+                                : "Outdoor walking"}
                             </span>
                           </div>
                           {r.shadeInfo && (
@@ -1188,7 +1229,7 @@ export default function MobilityApp({
                                 high-shade labels ·{" "}
                                 {r.shadeInfo.observedPercent}% observed
                                 {r.shadeInfo.synthetic
-                                  ? " · SYNTHETIC"
+                                  ? " · Illustrative"
                                   : " · categorical estimate"}
                               </span>
                             </div>
@@ -1203,12 +1244,19 @@ export default function MobilityApp({
                                 categorical shade preference
                               </p>
                             )}
+                          {r.shadeDetails && (
+                            <p className="data-note">
+                              {r.shadeDetails.shadedDistance ?? "—"} m shaded ·{" "}
+                              {r.shadeDetails.exposedDistance ?? "—"} m exposed
+                              · dataset estimate
+                            </p>
+                          )}
                           <div className="route-sub">
                             {(r.walking / 1000).toFixed(1)} km walking ·{" "}
                             {r.transfers} transfers
                             {r.shade !== null
-                              ? ` · ${r.shade}% synthetic model shade`
-                              : " · shade % unknown"}
+                              ? ` · ${r.shade}% ${r.shadeDetails ? "dataset shade coverage" : "modelled shade"}`
+                              : " · shade coverage not supplied"}
                           </div>
                         </button>
                       ))
@@ -1244,6 +1292,8 @@ export default function MobilityApp({
                           try {
                             const next = await plan(origin, to, data, isDemo, {
                               maxWalkingMinutes: prefs.max_walking_minutes,
+                              shadeWeightMultiplier:
+                                weather?.shade_weight_multiplier ?? 1,
                             });
                             setFrom(origin);
                             setRoutes(next);
@@ -1279,7 +1329,7 @@ export default function MobilityApp({
                               <div>
                                 <strong>{l.name}</strong>
                                 <small>
-                                  {l.minutes} min ·{" "}
+                                  {Math.round(l.minutes * 10) / 10} min ·{" "}
                                   {(l.distance / 1000).toFixed(2)} km ·
                                   estimated
                                 </small>
@@ -1287,19 +1337,21 @@ export default function MobilityApp({
                             </li>
                           ))}
                         </ol>
-                        <p className="data-note">
-                          <Info size={16} />
-                          {route.warning}
-                        </p>
-                        <small>Source: {route.source}</small>
+                        <details className="record-source">
+                          <summary>Route sources & estimates</summary>
+                          <p>{route.warning}</p>
+                          <p>Source: {route.source}</p>
+                        </details>
                       </div>
                     )}
                   </div>
                 </div>
               </>
             )}
+            {current === "conditions" && insights("all")}
             {current === "explore" && (
               <>
+                {insights("accessibility")}
                 <div className="filter-row">
                   {["All", "Places", "Metro", "Tram", "Bus", "Parking"].map(
                     (f) => (
@@ -1353,7 +1405,7 @@ export default function MobilityApp({
                                 : "mode" in p
                                   ? p.mode
                                   : "Location"}{" "}
-                              · {p.is_demo ? "Demo" : "Imported"}
+                              · {p.is_demo ? "Illustrative" : "Reference"}
                             </small>
                           </span>
                           <ArrowUpRight size={17} />
@@ -1432,7 +1484,9 @@ export default function MobilityApp({
                         >
                           {d.demand_level} demand
                         </span>
-                        <span>{d.is_demo ? "DEMO FORECAST" : "FORECAST"}</span>
+                        <span className="data-status">
+                          {d.is_demo ? "Illustrative forecast" : "Forecast"}
+                        </span>
                       </div>
                       <h2>{d.area_name}</h2>
                       <p className="forecast-date">
@@ -1528,7 +1582,7 @@ export default function MobilityApp({
                               <span className="pill">
                                 {verified
                                   ? `${status.available_spaces ?? "Unknown"} spaces · live feed`
-                                  : "Availability unverified"}
+                                  : "Availability not supplied"}
                               </span>
                             </div>
                             <h3>{p.name}</h3>
@@ -1570,7 +1624,7 @@ export default function MobilityApp({
                             </button>
                             <p className="data-note">
                               {p.is_demo
-                                ? "Demo location"
+                                ? "Illustrative location"
                                 : "Imported location"}{" "}
                               · {p.source}
                               <br />
@@ -1909,7 +1963,9 @@ export default function MobilityApp({
             Qatar Rail <ArrowUpRight size={13} />
           </a>
           <span>
-            {isDemo ? "Prototype · demonstration data" : "Connected prototype"}
+            {isDemo
+              ? "Offline explorer · sample data"
+              : "Smarter Qatar · connected datasets"}
           </span>
         </div>
       </footer>

@@ -2578,3 +2578,237 @@ button:disabled {
     padding-top: 20px;
   }
 }
+.mobility-insights {
+  margin: 24px 0;
+  color: #173d50;
+}
+.weather-panel {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  margin: 20px 0;
+  box-shadow: 0 5px 24px #173d5008;
+}
+.weather-title {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.weather-title h2 {
+  font-size: 24px;
+  margin: 4px 0;
+}
+.data-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 650;
+  color: #426570;
+  background: #edf2ef;
+  padding: 5px 8px;
+  border-radius: 5px;
+  line-height: 1.4;
+}
+.weather-title > .data-status {
+  margin-left: auto;
+}
+.weather-select {
+  display: grid;
+  gap: 7px;
+  max-width: 620px;
+  margin: 18px 0;
+  font-size: 13px;
+}
+.weather-select select,
+.shade-filters select {
+  border: 1px solid #ccd9d3;
+  background: #fafbf9;
+  border-radius: 7px;
+  padding: 10px;
+  max-width: 100%;
+  min-width: 0;
+  color: #173d50;
+}
+.weather-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  padding: 12px 0;
+}
+.weather-metrics > strong {
+  font-size: 36px;
+}
+.weather-metrics small {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+}
+.weather-metrics > span {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+.weather-metrics b {
+  font-size: 18px;
+}
+.heat-guidance {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: #f8f1dc;
+  padding: 12px;
+  border-radius: 7px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.heat-guidance svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.record-source {
+  margin: 12px 0;
+  font-size: 12px;
+}
+.record-source summary {
+  cursor: pointer;
+  color: #177d6c;
+}
+.record-source p {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.context-section {
+  margin: 30px 0;
+}
+.context-section h2 {
+  font-size: 25px;
+}
+.context-section h2 small {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 8px;
+}
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.context-card {
+  background: white;
+  padding: 22px;
+  border-radius: 10px;
+  min-width: 0;
+}
+.context-card > .data-status {
+  float: right;
+}
+.context-card h3 {
+  font-size: 18px;
+  margin: 16px 0 10px;
+}
+.context-card p {
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 8px 0;
+}
+.context-card small {
+  font-size: 12px;
+  color: #627782;
+}
+.context-loading,
+.context-empty {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+}
+.shade-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 20px 0;
+}
+.shade-filters label {
+  display: grid;
+  gap: 8px;
+  min-width: 200px;
+  max-width: 100%;
+  font-size: 13px;
+}
+.map-context-controls {
+  position: absolute;
+  bottom: 46px;
+  left: 14px;
+  z-index: 500;
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  background: white;
+  border-radius: 7px;
+  max-width: calc(100% - 28px);
+  flex-wrap: wrap;
+  box-shadow: 0 2px 10px #173d5010;
+}
+.map-context-controls button {
+  font-size: 11px;
+  padding: 5px 8px;
+  color: #173d50;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.map-context-controls button[aria-pressed="true"] {
+  background: #173d50;
+  color: white;
+}
+.planner-dashboard .context-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+}
+@media (max-width: 850px) {
+  .context-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .context-grid {
+    grid-template-columns: 1fr;
+  }
+  .weather-panel {
+    padding: 18px;
+  }
+  .weather-title {
+    flex-wrap: wrap;
+  }
+  .weather-title > .data-status {
+    margin-left: 0;
+  }
+  .weather-metrics {
+    gap: 16px;
+  }
+  .shade-filters label {
+    width: 100%;
+  }
+  .context-section h2 {
+    font-size: 22px;
+  }
+}
+.home-conditions {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.nav {
+  gap: 22px;
+}
+.context-card,
+.weather-panel,
+.shade-demo-option {
+  overflow-wrap: anywhere;
+}
+@media (min-width: 1000px) {
+  .nav {
+    font-size: 13px;
+    gap: 18px;
+  }
+}

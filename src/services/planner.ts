@@ -36,7 +36,11 @@ export async function plan(
   to: Location,
   data: Collection,
   demoMode: boolean,
-  options: { walker?: WalkingProvider; maxWalkingMinutes?: number } = {},
+  options: {
+    walker?: WalkingProvider;
+    maxWalkingMinutes?: number;
+    shadeWeightMultiplier?: number;
+  } = {},
 ): Promise<Journey[]> {
   if (distance(from, to) < 30)
     throw new Error("Choose two different locations.");
@@ -79,6 +83,7 @@ export async function plan(
       const w = await walker.route(from, to, {
         preferShade: true,
         shadeSegments: data.shade_segments,
+        shadeWeightMultiplier: options.shadeWeightMultiplier,
       });
       if (
         JSON.stringify(w.coordinates) !==
@@ -186,8 +191,10 @@ export async function plan(
 }
 
 export const walkingMinutes = (route: Journey) =>
-  route.legs
-    .filter((l) => l.mode === "walk")
-    .reduce((sum, l) => sum + l.minutes, 0);
+  Math.round(
+    route.legs
+      .filter((l) => l.mode === "walk")
+      .reduce((sum, l) => sum + l.minutes, 0) * 1000,
+  ) / 1000;
 export const walkingLimit = (value = 20) =>
   Number.isFinite(value) ? Math.min(20, Math.max(1, value)) : 20;
