@@ -121,7 +121,7 @@ export async function plan(
       /* Keep the supported standard route if shade routing is unavailable. */
     }
   }
-  for (const candidate of approximateTransit(from, to, data).slice(0, 3)) {
+  for (const candidate of approximateTransit(from, to, data).slice(0, 5)) {
     try {
       const legs: Leg[] = [];
       for (const leg of candidate.legs) {
