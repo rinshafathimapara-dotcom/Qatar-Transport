@@ -7,6 +7,7 @@ import {
 import { readPages } from "./records";
 export async function loadMobilityContext(
   includeIllustrative: boolean,
+  onProgress?: (data: MobilityContext) => void,
 ): Promise<{ data: MobilityContext; issues: string[] }> {
   const data = structuredClone(emptyMobilityContext),
     issues: string[] = [];
@@ -28,6 +29,7 @@ export async function loadMobilityContext(
           };
         });
         Object.assign(data, { [table]: rows });
+        onProgress?.(structuredClone(data));
       } catch (e) {
         issues.push(`${table}: ${(e as Error).message}`);
       }

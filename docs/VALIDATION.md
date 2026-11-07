@@ -84,3 +84,13 @@
 - The production browser passed weather reference selection (41°C / feels-like 45°C high-heat scenario), actual v3 corridor selection with 92.5% supplied coverage, disabled live GPS on corridor previews, and accessibility/traffic/vehicle map toggles. All selected data was fetched from Supabase, without mocked database responses.
 - Desktop (1440px), tablet (1024px), and mobile (390px) layout checks passed with no horizontal overflow. No JavaScript page errors were reported. A loading race was fixed: corridor preview controls wait until their referenced shade segments have loaded.
 - All 12 test files passed and the production build compiled with TypeScript checks.
+
+## Eye-level walking update
+
+- All 13 test files pass, including entry/choice/indoor/exit/completion transitions, an outdoor branch that does not reopen its decision, and proximity-filtered mall lookup.
+- Production build and TypeScript checks pass, including new `/walk` and existing `/demo` alias.
+- Actual Chromium browser checks passed: click on the SVG walking line, automatic map-to-eye-level opening, street shadows, timed mall pause, Enter the mall, indoor corridor/exit, and return to map. The outdoor branch, pause/resume, sunny/shaded toggle and closing also passed at 390px mobile width with no horizontal overflow.
+- The actual Supabase-connected planner displayed 29°C, feels-like 30.5°C, moderate heat stress beside its map. Weather is loaded progressively and no longer waits for every other city table.
+- No JavaScript page errors were reported. A playback-controls overlap found during testing was fixed before recording the final walkthrough.
+- `public/videos/eye-level-walk.mp4`: 20.64-second actual browser recording, approximately 594 KB. Generated scenery, mall access and movement remain explicitly simulated; it is not a physical access survey or GPS trace.
+- Final-build checks also passed the weather summary on `/walk` (29°C / feels-like 30.5°C), embedded MP4 metadata/playback availability (20.64 seconds), Escape-to-close and restoration of page scrolling. No JavaScript errors were reported.

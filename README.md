@@ -139,14 +139,18 @@ Never commit `.env.local` or service-role keys. Pushing source to GitHub does no
 
 ### Interactive walking presentation
 
-Open `/demo` to show the judges an accelerated walking journey with an automatic mall decision point, clickable E? entrance, through/around branches and an arrival state. All demo paths and doors are visibly labelled hypothetical; this page does not use GPS. See [the demo guide](docs/WALKING-DEMO.md). Real route planning now caps total walking at 20 minutes (15-minute option available), with expanded walking directions and opt-in **Start my journey** GPS tracking.
+Open **Walking experience** (`/walk`, with `/demo` retained as an alias) and tap the walking line to enter the eye-level scene. It pauses for the mall entrance choice, continues through an illustrative indoor corridor or around outside, and returns to the map. See [the walking-view guide](docs/WALKING-VIEW.md). Real route planning retains the maximum 20-minute walking budget; optional **Follow my location** GPS tracking is separate from the simulated scene.
 
 ### Shade overlay and comparison
 
-Open **Comfortable routes** (`/comfort`) to compare two local synthetic-shade presentations on actual mapped walking geometry. Click a route to show it on the existing map; use **Hide/Show shade overlay** to toggle high/medium/low/unknown colours. In connected mode, **Include demo records** exposes Supabase records that are marked synthetic. Route cards distinguish categorical spatial matches from numeric synthetic-model percentages. See [shade integration and the backend handoff](docs/SHADE-INTEGRATION.md) for calculation details and remaining verified-data requirements.
+Open **Comfortable routes** (`/comfort`) to compare supplied Supabase shade corridors. Click a corridor to preview its linked segments, or plan a road-following journey. Use **Hide/Show shade overlay** to toggle shade categories. The data-view control switches between all dataset records and records not flagged illustrative. Route cards distinguish categorical spatial matches from numeric synthetic-model percentages. See [shade integration and the backend handoff](docs/SHADE-INTEGRATION.md) for calculation details and remaining verified-data requirements.
 
 The journey planner (`/plan`) now uses an original AI-generated Doha-inspired sunset background, stored locally at `public/images/planner-sunset.jpg`. It is decorative artwork, not geographic data. The home video is preserved.
 
 ### v3 city information
 
 Open **City conditions** (`/conditions`) for the connected weather/heat references, accessibility, traffic, vehicle snapshots and historical journey metrics. The planner also offers the weather selector. **Comfortable routes** now loads `shade_demo_routes` and joins its ordered segment IDs to the existing shade table; the earlier missing-table message is obsolete. Source/status badges follow backend provenance. See [the v3 integration report](docs/BACKEND-V3.md) for observed columns, public query checks and the remaining RLS/provenance confirmations.
+
+### Eye-level walking
+
+Click a walking line on a journey map to open the new first-person walking scene. Or open **Walking experience** (`/walk`) for the City Center approach, mall decision, indoor corridor and exit flow. Generated gray buildings and shadow shapes illustrate the walk; a compact simulation label distinguishes it from GPS or street imagery. Weather/heat references now load independently and also appear beside the map. See [walking-view instructions](docs/WALKING-VIEW.md).

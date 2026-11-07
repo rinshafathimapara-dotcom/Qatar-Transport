@@ -117,7 +117,9 @@ export default function MobilityApp({
   const refreshCity = useCallback(() => {
     const request = ++cityRequest.current;
     setCityLoading(true);
-    loadMobilityContext(includeDemo)
+    loadMobilityContext(includeDemo, (partial) => {
+      if (request === cityRequest.current) setCity(partial);
+    })
       .then((result) => {
         if (request !== cityRequest.current) return;
         setCity(result.data);
@@ -638,6 +640,7 @@ export default function MobilityApp({
       route={route}
       showConceptRoute={!!presentationShade}
       mobility={city}
+      walkingWeather={weather}
       livePosition={livePosition}
       passages={route ? relevantPassages(route, indoorPassages) : []}
       selectedPassage={selectedPassage}
@@ -754,7 +757,7 @@ export default function MobilityApp({
           </div>
           <Link href="/saved">Saved journeys</Link>
           <Link href="/conditions">City conditions</Link>
-          <Link href="/demo">Walking demo</Link>
+          <Link href="/walk">Walking experience</Link>
           <Link href="/demand" className="nav-alert">
             <Bell size={17} />
             <span className="sr-only">Demand alerts</span>
@@ -1264,47 +1267,81 @@ export default function MobilityApp({
                   </div>
                   <div>
                     {picks}
+                    <div className="map-weather-summary" role="status">
+                      {weather ? (
+                        <>
+                          <Sun size={17} />
+                          <strong>{weather.temperature_c ?? "—"}°C</strong>
+                          <span>
+                            Feels like {weather.feels_like_c ?? "—"}°C ·{" "}
+                            {weather.heat_stress_level ?? "—"} heat stress
+                          </span>
+                          <Link href="/conditions">Weather details ↗</Link>
+                        </>
+                      ) : (
+                        <>
+                          <Sun size={17} />
+                          <span>
+                            {cityLoading
+                              ? "Loading weather reference…"
+                              : "Weather reference not available"}
+                          </span>
+                          <button className="text-button" onClick={refreshCity}>
+                            Refresh weather
+                          </button>
+                        </>
+                      )}
+                    </div>
                     {route && (
-                      <WalkingAssistant
-                        route={route}
-                        maxWalkingMinutes={prefs.max_walking_minutes}
-                        passages={indoorPassages}
-                        selectedId={selectedPassage}
-                        onSelect={setSelectedPassage}
-                        onPosition={setLivePosition}
-                        onError={notify}
-                        onReplace={(updated) =>
-                          setRoutes((previous) =>
-                            previous.map((r) =>
-                              r.id === updated.id ? updated : r,
-                            ),
-                          )
-                        }
-                        onReroute={async (fix) => {
-                          if (!data) return;
-                          const origin = {
-                            id: "gps",
-                            name: "Your current location",
-                            latitude: fix.latitude,
-                            longitude: fix.longitude,
-                          };
-                          setBusy(true);
-                          try {
-                            const next = await plan(origin, to, data, isDemo, {
-                              maxWalkingMinutes: prefs.max_walking_minutes,
-                              shadeWeightMultiplier:
-                                weather?.shade_weight_multiplier ?? 1,
-                            });
-                            setFrom(origin);
-                            setRoutes(next);
-                            setSelected(next[0]?.id || "");
-                          } catch (error) {
-                            notify((error as Error).message);
-                          } finally {
-                            setBusy(false);
+                      <details className="walking-location-details">
+                        <summary>Walking directions & live location</summary>{" "}
+                        <WalkingAssistant
+                          route={route}
+                          maxWalkingMinutes={prefs.max_walking_minutes}
+                          passages={indoorPassages}
+                          selectedId={selectedPassage}
+                          onSelect={setSelectedPassage}
+                          onPosition={setLivePosition}
+                          onError={notify}
+                          onReplace={(updated) =>
+                            setRoutes((previous) =>
+                              previous.map((r) =>
+                                r.id === updated.id ? updated : r,
+                              ),
+                            )
                           }
-                        }}
-                      />
+                          onReroute={async (fix) => {
+                            if (!data) return;
+                            const origin = {
+                              id: "gps",
+                              name: "Your current location",
+                              latitude: fix.latitude,
+                              longitude: fix.longitude,
+                            };
+                            setBusy(true);
+                            try {
+                              const next = await plan(
+                                origin,
+                                to,
+                                data,
+                                isDemo,
+                                {
+                                  maxWalkingMinutes: prefs.max_walking_minutes,
+                                  shadeWeightMultiplier:
+                                    weather?.shade_weight_multiplier ?? 1,
+                                },
+                              );
+                              setFrom(origin);
+                              setRoutes(next);
+                              setSelected(next[0]?.id || "");
+                            } catch (error) {
+                              notify((error as Error).message);
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                        />
+                      </details>
                     )}
                     {mapArea}
                     {route && (

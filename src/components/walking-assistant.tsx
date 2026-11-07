@@ -171,22 +171,10 @@ export default function WalkingAssistant({
     .reduce((n, l) => n + l.minutes, 0);
   if (!canNavigate)
     return (
-      <div className="walking-assistant">
-        <span className="eyebrow">SELECTED CORRIDOR</span>
-        <h3>Preview the walking sections</h3>
-        <p className="data-note">
-          This dataset corridor shows the linked segments and supplied route
-          estimates. Plan a road-following pedestrian journey to use GPS
-          navigation.
-        </p>
-        <button
-          className="secondary"
-          disabled
-          title="Live navigation requires a mapped pedestrian route"
-        >
-          Start my journey
-        </button>
-      </div>
+      <p className="data-note">
+        Tap a walking line on the map to explore it at eye level. Use a
+        road-following journey for live location tracking.
+      </p>
     );
   return (
     <div className="walking-assistant">
@@ -216,7 +204,7 @@ export default function WalkingAssistant({
           }}
         >
           {tracking ? <Pause size={16} /> : <LocateFixed size={16} />}
-          {tracking ? "Stop journey" : "Start my journey"}
+          {tracking ? "Stop location tracking" : "Follow my location"}
         </button>
       </div>
       {route.legs.some((l) => l.geometry === "concept") && (

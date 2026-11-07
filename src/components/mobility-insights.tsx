@@ -98,7 +98,7 @@ export default function MobilityInsights({
     data.weather_conditions.find((r) => r.is_demo === false) ??
     data.weather_conditions[0];
   const weatherSource = sources.find((s) => s.id === weather?.data_source_id);
-  if (loading)
+  if (loading && !data.weather_conditions.length)
     return (
       <div className="context-loading" role="status">
         Loading city conditions…

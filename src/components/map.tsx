@@ -1,4 +1,8 @@
 "use client";
+import { createPortal } from "react-dom";
+import WalkingView, { type WalkingViewInput } from "./walking-view";
+import { mallAlongWalk } from "@/services/walking-scene";
+import type { Leg } from "@/types/database";
 import type { MobilityContext } from "@/types/mobility-context";
 import { dataStatus, qatarTimestamp } from "@/services/provenance";
 import { useEffect, useRef, useState } from "react";
@@ -39,6 +43,9 @@ export default function MobilityMap({
   onConceptDecision,
   showConceptRoute = false,
   mobility,
+  walkingMall,
+  walkingWeather,
+  onWalkChoice,
 }: {
   data: Collection;
   from: Location;
@@ -55,6 +62,12 @@ export default function MobilityMap({
   onConceptDecision?: () => void;
   showConceptRoute?: boolean;
   mobility?: MobilityContext;
+  walkingMall?: { name: string; atMetres: number; exitAtMetres?: number };
+  walkingWeather?: {
+    temperature_c: number | null;
+    feels_like_c: number | null;
+  };
+  onWalkChoice?: (choice: "inside" | "outside") => void;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
@@ -65,6 +78,7 @@ export default function MobilityMap({
   const conceptDecision = useRef(onConceptDecision);
   conceptDecision.current = onConceptDecision;
   const simulationMarker = useRef<L.CircleMarker | null>(null);
+  const [walkingView, setWalkingView] = useState<WalkingViewInput | null>(null);
   const [contextLayers, setContextLayers] = useState({
     access: false,
     traffic: false,
@@ -82,6 +96,31 @@ export default function MobilityMap({
   const point = (
     p: Pick<Location, "latitude" | "longitude">,
   ): L.LatLngTuple => [p.latitude, p.longitude];
+  const openWalking = (leg: Leg) => {
+    const p = leg.coordinates[0];
+    if (!p) return;
+    map.current?.setView([p[1], p[0]], 18, { animate: false });
+    const mall = mallAlongWalk(leg, data.places);
+    const weather =
+      walkingWeather ??
+      mobility?.weather_conditions.find((r) => r.is_demo === false) ??
+      mobility?.weather_conditions[0];
+    setWalkingView({
+      leg,
+      mall:
+        (walkingMall && route?.legs[0] === leg ? walkingMall : undefined) ??
+        (mall ? { name: mall.place.name, atMetres: mall.progress } : undefined),
+      initialShade:
+        conceptOnly ||
+        leg.environment === "indoor" ||
+        (route?.shadeInfo?.highPercent ?? 0) > 30,
+      temperature: weather?.temperature_c,
+      feelsLike: weather?.feels_like_c,
+      onChoice: onWalkChoice,
+    });
+  };
+  const walkOpen = useRef(openWalking);
+  walkOpen.current = openWalking;
   useEffect(() => {
     if (!container.current) return;
     reduced.current = window.matchMedia(
@@ -279,8 +318,8 @@ export default function MobilityMap({
           l.geometry === "mapped-transit" ||
           ((conceptOnly || showConceptRoute) && l.geometry === "concept"),
       )
-      .forEach((l) =>
-        L.polyline(
+      .forEach((l) => {
+        const line = L.polyline(
           l.coordinates.map(([lng, lat]) => [lat, lng] as L.LatLngTuple),
           {
             color:
@@ -299,8 +338,30 @@ export default function MobilityMap({
                 ? "5 5"
                 : undefined,
           },
-        ).addTo(layer),
-      );
+        ).addTo(layer);
+        if (l.mode === "walk") {
+          line.on("click", () => walkOpen.current(l));
+          const target = L.polyline(
+            l.coordinates.map(([lng, lat]) => [lat, lng] as L.LatLngTuple),
+            { weight: 22, opacity: 0, interactive: true },
+          ).addTo(layer);
+          target.on("click", () => walkOpen.current(l));
+          target.bindTooltip("Open first-person walking view");
+          const element = target.getElement();
+          element?.setAttribute("role", "button");
+          element?.setAttribute("tabindex", "0");
+          element?.setAttribute("aria-label", `Open walking view: ${l.name}`);
+          element?.addEventListener("keydown", (event) => {
+            if (
+              (event as KeyboardEvent).key === "Enter" ||
+              (event as KeyboardEvent).key === " "
+            ) {
+              event.preventDefault();
+              walkOpen.current(l);
+            }
+          });
+        }
+      });
     if (layer.getLayers().length)
       m.fitBounds(layer.getBounds(), {
         padding: [50, 50],
@@ -414,7 +475,7 @@ export default function MobilityMap({
         continue;
       const content = document.createElement("div");
       content.textContent = `${shadeLevel(row.shade_level)} shade · ${row.is_demo ? "Illustrative" : "Categorical reference"}. ${data.data_sources.find((s) => s.id === row.data_source)?.name || row.data_source || "Source not supplied"}. Coverage percentage, observation time and time-of-day validity unavailable.`;
-      L.polyline(
+      const shadeLine = L.polyline(
         [
           [row.start_latitude, row.start_longitude],
           [row.end_latitude, row.end_longitude],
@@ -425,9 +486,21 @@ export default function MobilityMap({
           opacity: 0.7,
           dashArray: row.is_demo ? "5 6" : undefined,
         },
-      )
-        .bindPopup(content)
-        .addTo(layer);
+      ).addTo(layer);
+      const selectedWalk = route?.legs.find(
+        (l) =>
+          l.mode === "walk" &&
+          l.coordinates.some(
+            ([lng, lat]) =>
+              Math.abs(lng - row.start_longitude) < 1e-7 &&
+              Math.abs(lat - row.start_latitude) < 1e-7,
+          ),
+      );
+      if (selectedWalk)
+        shadeLine
+          .bindTooltip("Open first-person walking view")
+          .on("click", () => walkOpen.current(selectedWalk));
+      else shadeLine.bindPopup(content);
     }
     for (const leg of route?.legs.filter(
       (l) => l.mode === "walk" && l.geometry === "routed",
@@ -437,7 +510,7 @@ export default function MobilityMap({
         text.textContent = slice.row
           ? `Walking path matched to ${shadeLevel(slice.row.shade_level)} shade · ${slice.row.is_demo ? "illustrative" : "categorical spatial estimate"}. 5 m spatial tolerance; not a heat measurement.`
           : "No shade information matched to this walking section.";
-        L.polyline(
+        const walkingSlice = L.polyline(
           [
             [slice.a[1], slice.a[0]],
             [slice.b[1], slice.b[0]],
@@ -447,9 +520,10 @@ export default function MobilityMap({
             weight: 9,
             opacity: 0.55,
           },
-        )
-          .bindPopup(text)
-          .addTo(layer);
+        ).addTo(layer);
+        walkingSlice
+          .bindTooltip("Open first-person walking view")
+          .on("click", () => walkOpen.current(leg));
       }
     }
     return () => {
@@ -526,6 +600,14 @@ export default function MobilityMap({
   }, [mobility, contextLayers]);
   return (
     <div className="map-shell">
+      {walkingView &&
+        createPortal(
+          <WalkingView
+            input={walkingView}
+            onClose={() => setWalkingView(null)}
+          />,
+          document.body,
+        )}
       <div
         ref={container}
         className="map-canvas"
@@ -554,10 +636,10 @@ export default function MobilityMap({
         </div>
       )}
       <span className="map-label">
-        {conceptOnly ? "CONCEPT SIMULATION" : "DOHA, QATAR"}{" "}
+        {conceptOnly ? "WALKING EXPERIENCE" : "DOHA, QATAR"}{" "}
         <span>
           {conceptOnly
-            ? "Hypothetical doors · not live directions"
+            ? "Tap a walking line for the eye-level scene"
             : "Destinations · Stations · Parking · Shade"}
         </span>
       </span>
@@ -618,6 +700,25 @@ export default function MobilityMap({
           {follow ? "Following location" : "Follow my location"}
         </button>
       )}
+      {route?.legs.some((l) => l.mode === "walk") && (
+        <div className="map-walk-actions">
+          {route.legs
+            .filter((l) => l.mode === "walk")
+            .map((leg, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => walkOpen.current(leg)}
+              >
+                Walk view{" "}
+                {route.legs.filter((l) => l.mode === "walk").length > 1
+                  ? i + 1
+                  : ""}{" "}
+                ↗
+              </button>
+            ))}
+        </div>
+      )}
       {route && (
         <div className="map-route-legend">
           <span style={{ color: "#138879" }}>● Walk</span>
@@ -632,7 +733,7 @@ export default function MobilityMap({
         route?.legs.some((l) => !l.geometry || l.geometry === "schematic")) && (
         <span className="map-demo">
           {conceptOnly
-            ? "Hypothetical entrance, exit and passage · do not follow"
+            ? "Illustrative mall access · visual experience"
             : route.legs.some((l) => l.geometry === "concept")
               ? "Dataset corridor preview · not live navigation"
               : route.legs.some(

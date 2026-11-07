@@ -99,3 +99,11 @@ v3 additions:
 - `src/services/provenance.ts`: compact source/status labels and nullable display helpers.
 - `src/components/mobility-insights.tsx`: city conditions and weather selector.
 - `docs/BACKEND-V3.md`: current schema observations, limitations and backend checks.
+
+Eye-level walking additions:
+- `src/app/walk/page.tsx`: dedicated map-to-eye-level experience.
+- `src/components/walking-view.tsx`: accessible walking modal, playback, mall choices and exit states.
+- `src/components/walking-street-canvas.tsx`: dependency-free grayscale perspective renderer and illustrative shadows.
+- `src/services/walking-scene.ts`: progress/choice/exit state transitions and nearby-mall lookup.
+- `tests/walking-scene.test.ts`: state-machine and mall-proximity checks.
+- `docs/WALKING-VIEW.md`: controls, data boundaries and weather-loading changes.

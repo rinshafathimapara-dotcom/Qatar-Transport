@@ -1,19 +1,12 @@
 # Walking presentation and real navigation
 
-Open `/demo` or choose **Walking demo** in the navigation. No Supabase records or GPS permissions are needed for this page.
-
-1. Press **Start my journey · demo**. After two seconds the purple dot walks along the illustrative approach, at the selected playback speed.
-2. It automatically stops at E?, the entrance decision point. You can also click E? at any time to preview the choice; doing so pauses a running demo.
-3. Choose **Go through the mall · demo** (purple interior) or **Stay outside · demo** (green perimeter). Playback continues after an automatic stop. If you opened the marker manually, press Resume.
-4. The dot passes X? and finishes at the destination. Reset to compare the other branch.
-
-The City Center Doha footprint is from OpenStreetMap. All demo doors, approaches, indoor paths and perimeter branches are hypothetical illustrations. They are not surveyed public walking directions. Minutes use an illustrative 75 m/min walking speed. Playback is accelerated and not live location. Steps are distance divided by 0.75 m, not sensor measurements. No cooling, shade, actual indoor access or verified floor plan is claimed.
+Open **Walking experience** (`/walk`; `/demo` remains an alias). Tap the walking line to enter a generated eye-level street scene. It pauses at City Center Doha, offers through/around choices, shows an indoor corridor and exit, and returns to the map. See [the current guide](WALKING-VIEW.md) for exact controls and data boundaries. The older purple-dot presentation has been superseded.
 
 ## Real journeys
 
 The planner now enforces a maximum **total walking budget of 20 minutes**, including all access/transfer/egress walking legs; users can choose 15 minutes or a smaller saved preference. Transit journeys may take longer in total. When no supported journey fits, the planner explains this instead of suggesting a 151-minute walk. Changing the limit also hides older/saved comparisons that exceed it. Indoor rerouting must respect the same budget.
 
-**Start my journey** on a selected real route opts into browser GPS. Stop journey or leaving the page clears the watch. Estimated distance/steps use fresh, reasonably accurate fixes near a mapped walking leg, rejecting implausible speeds and small jitter. These remain estimates, not a reliable pedometer. Background/locked-screen tracking is not guaranteed by browsers. GPS is often poor inside buildings.
+**Follow my location** on a selected real route opts into browser GPS. Stop location tracking or leaving the page clears the watch. Estimated distance/steps use fresh, reasonably accurate fixes near a mapped walking leg, rejecting implausible speeds and small jitter. These remain estimates, not a reliable pedometer. Background/locked-screen tracking is not guaranteed by browsers. GPS is often poor inside buildings.
 
 The existing live passage registry stays empty until reviewed data is supplied. Verified live decision markers and proximity prompts are separate from the presentation simulation.
 
@@ -27,4 +20,4 @@ The main constraint is reliable, maintained data and positioning—not simply st
 
 ## Recorded demonstration
 
-`public/videos/walking-journey-demo.mp4` is an actual browser recording of the interactive presentation: start, automatic pause, indoor choice, arrival, reset, marker click and outdoor choice. Open **Watch the recorded judge demonstration** on `/demo` to play or download it. It has no narration and records simulated movement, not a field test.
+The current `/walk` page plays and downloads `public/videos/eye-level-walk.mp4`, a 20.64-second actual browser recording of the first-person scene and mall flow. It records simulated movement, not a field walk. The older `public/videos/walking-journey-demo.mp4` is retained only as a historical asset.
