@@ -134,5 +134,7 @@ export function approximateTransit(
     }
     if (best) results.push(best);
   }
-  return results.slice(0, 5);
-}
+  return results
+    .sort((a, b) => a.minutes - b.minutes)
+    .slice(0, 8);
+  }
