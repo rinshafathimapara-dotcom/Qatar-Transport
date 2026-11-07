@@ -158,3 +158,7 @@ Click a walking line on a journey map to open the new first-person walking scene
 ### Fares and tickets
 
 Journey cards now show QAR fares with published-reference / indicative / unavailable status and a breakdown. Choose Standard, Family or Gold, single/day/weekly products, reusable-card capping and optional new-card purchase in the existing planner. Karwa estimates use an optional driving router; without one, they remain unavailable rather than using walking distance. Bus card references are separate from unknown ordinary bus fares, and other ride-hailing services need actual quotes. See [fare calculations, sources, verification limits and driving setup](docs/FARES.md).
+
+Location search includes a bundled Qatar OpenStreetMap index (15,783 mapped locations in the November 7, 2026 snapshot), plus the loaded Supabase places and stops. Search by English/Arabic name, district, street, landmark or mapped address; coordinates can be entered as `latitude, longitude`. The index expands search coverage; walking routing still depends on the available pedestrian network. See [location data attribution and rebuilding](data/geocoding/README.md).
+
+Karwa Taxi and Uber are available beside the journey inputs. These open official provider booking services; copying trip details helps transfer the selected locations. A booking is confirmed in the provider app. Uber fares require a provider quote; an in-app Karwa estimate requires the separately configured driving router above. No walking distance is substituted for a driving route.

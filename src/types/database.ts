@@ -159,6 +159,10 @@ export type Database = {
   };
 };
 export type Location = {
+  address?: string;
+  aliases?: string;
+  priority?: number;
+  source?: string;
   id: string;
   name: string;
   latitude: number;

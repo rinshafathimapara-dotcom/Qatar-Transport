@@ -3445,3 +3445,14 @@ button:disabled {
   margin-top: 15px;
   color: #416957;
 }
+
+.ride-choices { color: var(--navy, #173847); margin: 14px 0; text-align: left; }
+.ride-choice-buttons, .ride-provider-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.ride-choice-buttons > span { font-size: 13px; }
+.ride-choice-buttons button { display:flex; align-items:center; gap:7px; padding:10px 16px; background:#edf3ef; border-radius:8px; font-weight:600; }
+.ride-choice-buttons button[aria-pressed="true"] { background:#173847; color:white; }
+.ride-provider-panel { margin-top:12px; padding:16px; background:#f3f8f5; border-left:3px solid #169c8d; border-radius:6px; font-size:14px; }
+.ride-provider-panel p { margin:8px 0 12px; line-height:1.6; }
+.ride-provider-actions a, .ride-provider-actions button { display:inline-flex; align-items:center; gap:6px; padding:9px 12px; border-radius:6px; background:white; color:#173847; }
+.ride-provider-panel small { display:block; margin-top:10px; }
+.suggestions small { font-size:12px; line-height:1.5; }

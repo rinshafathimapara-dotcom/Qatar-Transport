@@ -59,6 +59,7 @@ import { loadDataset } from "@/services/data";
 import { plan, rank, walkingMinutes, walkingLimit } from "@/services/planner";
 import { distance } from "@/services/geo";
 import { normalizePriority, storedPriority } from "@/services/preferences";
+import RideChoices from "./ride-choices";
 import LocationSearch from "./location-search";
 import StatsCounter from "./ui/stats-counter";
 import HeroVideo from "./hero-video";
@@ -622,6 +623,7 @@ export default function MobilityApp({
           onError={notify}
         />
       </div>
+      <RideChoices from={from} to={to} />
       <label className="walking-budget">
         Total walking budget{" "}
         <select
