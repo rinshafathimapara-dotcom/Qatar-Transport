@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { demo } from "../src/data/demo";
+import { approximateTransit } from "../src/services/transit";
 import { plan, rank } from "../src/services/planner";
 import type { WalkingProvider } from "../src/services/geo";
 const walker: WalkingProvider = {
@@ -12,7 +13,7 @@ const walker: WalkingProvider = {
         [to.longitude, to.latitude],
       ],
       distance: 2000,
-      minutes: 27,
+      minutes: 12,
       source: "Test network",
       snappedFrom: 0,
       snappedTo: 0,
@@ -49,8 +50,49 @@ test("ranking considers distance and budget without inventing shade", async () =
   const [a] = await plan(demo.places[0], demo.places[3], demo, true, {
     walker,
   });
-  const b = { ...a, id: "paid", minutes: 20, distance: 1500, cost: 3 };
+  const b = { ...a, id: "paid", minutes: 8, distance: 1500, cost: 3 };
   assert.equal(rank([a, b], "Fastest")[0].id, "paid");
   assert.equal(rank([a, b], "Budget-friendly")[0].id, "walking");
   assert.equal(rank([a, b], "Shortest")[0].id, "paid");
+});
+
+test("long walks are excluded, including when a larger budget is requested", async () => {
+  await assert.rejects(
+    plan(demo.places[0], demo.places[3], demo, true, {
+      maxWalkingMinutes: 151,
+      walker: {
+        async route(a, b) {
+          return { ...(await walker.route(a, b)), minutes: 151 };
+        },
+      },
+    }),
+    /20-minute total walking budget/,
+  );
+});
+test("walking budget applies to combined transit access and egress, not just individual legs", async () => {
+  assert.ok(
+    approximateTransit(demo.places[0], demo.places[1], demo).length > 0,
+  );
+  const routes = await plan(demo.places[0], demo.places[1], demo, true, {
+    walker,
+  });
+  assert.ok(
+    routes.every(
+      (r) =>
+        r.legs
+          .filter((l) => l.mode === "walk")
+          .reduce((sum, l) => sum + l.minutes, 0) <= 20,
+    ),
+  );
+  assert.ok(
+    routes.every((r) => !r.legs.some((l) => l.mode !== "walk")),
+    "two 12-minute walking legs exceed the 20-minute total budget",
+  );
+  await assert.rejects(
+    plan(demo.places[0], demo.places[1], demo, true, {
+      walker,
+      maxWalkingMinutes: 10,
+    }),
+    /10-minute total walking budget/,
+  );
 });

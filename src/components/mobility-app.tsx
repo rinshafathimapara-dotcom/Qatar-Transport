@@ -43,7 +43,7 @@ import type {
 import { supabase, isDemo } from "@/lib/supabase";
 import { demo } from "@/data/demo";
 import { loadDataset } from "@/services/data";
-import { plan, rank } from "@/services/planner";
+import { plan, rank, walkingMinutes, walkingLimit } from "@/services/planner";
 import { distance } from "@/services/geo";
 import { normalizePriority, storedPriority } from "@/services/preferences";
 import LocationSearch from "./location-search";
@@ -249,7 +249,12 @@ export default function MobilityApp({
     const t = setTimeout(() => setMessage(""), 9000);
     return () => clearTimeout(t);
   }, [message]);
-  const sorted = rank(routes, priority),
+  const sorted = rank(
+      routes.filter(
+        (r) => walkingMinutes(r) <= walkingLimit(prefs.max_walking_minutes),
+      ),
+      priority,
+    ),
     route = sorted.find((r) => r.id === selected) || sorted[0];
   const current = initialSection;
   async function search() {
@@ -257,7 +262,9 @@ export default function MobilityApp({
     setBusy(true);
     setRoutes([]);
     try {
-      const result = await plan(from, to, data, isDemo);
+      const result = await plan(from, to, data, isDemo, {
+        maxWalkingMinutes: prefs.max_walking_minutes,
+      });
       setRoutes(result);
       setSelected(rank(result, priority)[0]?.id || "");
       if (current === "home") {
@@ -302,7 +309,7 @@ export default function MobilityApp({
       setFrom(a);
       setTo(b);
       setBusy(true);
-      plan(a, b, data, isDemo)
+      plan(a, b, data, isDemo, { maxWalkingMinutes: prefs.max_walking_minutes })
         .then((r) => {
           setRoutes(r);
           setSelected(r[0]?.id || "");
@@ -536,6 +543,24 @@ export default function MobilityApp({
           onError={notify}
         />
       </div>
+      <label className="walking-budget">
+        Total walking budget{" "}
+        <select
+          aria-label="Total walking budget"
+          value={walkingLimit(prefs.max_walking_minutes)}
+          onChange={(e) =>
+            setPrefs({ ...prefs, max_walking_minutes: Number(e.target.value) })
+          }
+        >
+          {![15, 20].includes(walkingLimit(prefs.max_walking_minutes)) && (
+            <option value={walkingLimit(prefs.max_walking_minutes)}>
+              {walkingLimit(prefs.max_walking_minutes)} minutes
+            </option>
+          )}
+          <option value={15}>15 minutes</option>
+          <option value={20}>20 minutes</option>
+        </select>
+      </label>
       <div className="planner-bottom">
         <span>
           <Clock size={15} /> Estimates · no live departures
@@ -668,6 +693,7 @@ export default function MobilityApp({
             </AnimatePresence>
           </div>
           <Link href="/saved">Saved journeys</Link>
+          <Link href="/demo">Walking demo</Link>
           <Link href="/demand" className="nav-alert">
             <Bell size={17} />
             <span className="sr-only">Demand alerts</span>
@@ -1106,6 +1132,24 @@ export default function MobilityApp({
                               </span>
                             ))}
                           </div>
+                          <div className="walking-summary">
+                            <strong>
+                              {r.legs
+                                .filter((l) => l.mode === "walk")
+                                .reduce((n, l) => n + l.minutes, 0)}{" "}
+                              min on foot
+                            </strong>
+                            <span>
+                              {r.legs.filter((l) => l.mode === "walk").length}{" "}
+                              walking sections · {(r.walking / 1000).toFixed(1)}{" "}
+                              km
+                            </span>
+                            <span>
+                              {r.legs.some((l) => l.environment === "indoor")
+                                ? "Includes a mapped indoor passage"
+                                : "Outdoor walking · shade unverified"}
+                            </span>
+                          </div>
                           <div className="route-sub">
                             {(r.walking / 1000).toFixed(1)} km walking ·{" "}
                             {r.transfers} transfers
@@ -1120,6 +1164,7 @@ export default function MobilityApp({
                     {route && (
                       <WalkingAssistant
                         route={route}
+                        maxWalkingMinutes={prefs.max_walking_minutes}
                         passages={indoorPassages}
                         selectedId={selectedPassage}
                         onSelect={setSelectedPassage}
@@ -1142,7 +1187,9 @@ export default function MobilityApp({
                           };
                           setBusy(true);
                           try {
-                            const next = await plan(origin, to, data, isDemo);
+                            const next = await plan(origin, to, data, isDemo, {
+                              maxWalkingMinutes: prefs.max_walking_minutes,
+                            });
                             setFrom(origin);
                             setRoutes(next);
                             setSelected(next[0]?.id || "");
@@ -1451,7 +1498,10 @@ export default function MobilityApp({
                                 if (!data) return;
                                 setBusy(true);
                                 try {
-                                  const r = await plan(p, to, data, false);
+                                  const r = await plan(p, to, data, false, {
+                                    maxWalkingMinutes:
+                                      prefs.max_walking_minutes,
+                                  });
                                   setRoutes(r);
                                   setSelected(r[0]?.id || "");
                                 } catch (e) {
@@ -1590,13 +1640,16 @@ export default function MobilityApp({
                       <input
                         type="number"
                         min="1"
-                        max="180"
+                        max="20"
                         required
                         value={prefs.max_walking_minutes}
                         onChange={(e) =>
                           setPrefs({
                             ...prefs,
-                            max_walking_minutes: Number(e.target.value),
+                            max_walking_minutes: Math.min(
+                              20,
+                              Math.max(1, Number(e.target.value)),
+                            ),
                           })
                         }
                       />

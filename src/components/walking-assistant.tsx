@@ -16,9 +16,11 @@ import {
 } from "@/services/navigation";
 import { choosePassage } from "@/services/indoor-routing";
 import { distance } from "@/services/geo";
+import { walkingMinutes, walkingLimit } from "@/services/planner";
 import IndoorConcept from "./indoor-concept";
 export default function WalkingAssistant({
   route,
+  maxWalkingMinutes = 20,
   passages,
   selectedId,
   onSelect,
@@ -28,6 +30,7 @@ export default function WalkingAssistant({
   onError,
 }: {
   route: Journey;
+  maxWalkingMinutes?: number;
   passages: IndoorPassage[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
@@ -41,6 +44,10 @@ export default function WalkingAssistant({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [clock, setClock] = useState(0);
+  const activeRoute = useRef(route);
+  activeRoute.current = route;
+  const [walked, setWalked] = useState(0);
+  const previousFix = useRef<LiveFix | null>(null);
   const decisions = useRef(new Set<string>()),
     watch = useRef<number | null>(null);
   const available = relevantPassages(route, passages, new Date(clock));
@@ -67,6 +74,27 @@ export default function WalkingAssistant({
           accuracy: p.coords.accuracy,
           timestamp: p.timestamp,
         };
+        const last = previousFix.current;
+        const nearWalk = activeRoute.current.legs.some(
+          (l) =>
+            l.mode === "walk" &&
+            l.geometry === "routed" &&
+            alongPath(next, l.coordinates).distance < 30,
+        );
+        if (last && nearWalk && next.accuracy <= 20 && last.accuracy <= 20) {
+          const seconds = (next.timestamp - last.timestamp) / 1000,
+            metres = distance(last, next);
+          if (
+            seconds > 0 &&
+            seconds < 20 &&
+            metres >= 5 &&
+            metres / seconds <= 2.5
+          ) {
+            setWalked((n) => n + metres);
+            previousFix.current = next;
+          } else if (seconds >= 20 || metres / seconds > 2.5)
+            previousFix.current = next;
+        } else previousFix.current = next;
         setFix(next);
         onPosition(next);
         setMessage("");
@@ -112,6 +140,10 @@ export default function WalkingAssistant({
     setBusy(true);
     try {
       const updated = await choosePassage(route, selected, choice);
+      if (walkingMinutes(updated) > walkingLimit(maxWalkingMinutes))
+        throw new Error(
+          "This branch exceeds your total walking budget. Keep the current route or choose a closer destination.",
+        );
       decisions.current.add(selected.id);
       onReplace(updated);
       onSelect(null);
@@ -140,6 +172,10 @@ export default function WalkingAssistant({
           className="secondary"
           onClick={() => {
             setTracking(!tracking);
+            if (!tracking) {
+              setWalked(0);
+              previousFix.current = null;
+            }
             if (tracking) {
               setFix(null);
               onPosition(null);
@@ -147,7 +183,7 @@ export default function WalkingAssistant({
           }}
         >
           {tracking ? <Pause size={16} /> : <LocateFixed size={16} />}
-          {tracking ? "Stop location" : "Start live location"}
+          {tracking ? "Stop journey" : "Start my journey"}
         </button>
       </div>
       <p className="data-note">
@@ -157,6 +193,13 @@ export default function WalkingAssistant({
         app's server. Only an optional external provider forwards those
         endpoints to that provider.
       </p>
+      {tracking && (
+        <p className="data-note">
+          {Math.round(walked)} m walked from filtered GPS · ~
+          {Math.round(walked / 0.75)} estimated steps. This is not a pedometer;
+          GPS drift and indoor reception affect this estimate.
+        </p>
+      )}
       {tracking && (
         <div className="gps-status" role="status">
           {fix ? (
@@ -235,6 +278,33 @@ export default function WalkingAssistant({
           or walk-through permissions have been invented for live navigation.
         </p>
       )}
+      <a className="secondary" href="/demo">
+        Play the walking journey demo →
+      </a>
+      <details className="walking-directions">
+        <summary>
+          Walking directions · {walkingMinutes(route)} minutes total
+        </summary>
+        {route.legs
+          .filter((l) => l.mode === "walk")
+          .map((leg, i) => (
+            <section key={i}>
+              <h4>
+                {leg.name} · {leg.minutes} min · {Math.round(leg.distance)} m
+              </h4>
+              <ol>
+                {(leg.instructions?.length
+                  ? leg.instructions.map((s) => s.text)
+                  : [
+                      "Follow the highlighted pedestrian path. Check crossings and access signs.",
+                    ]
+                ).map((text, j) => (
+                  <li key={j}>{text}</li>
+                ))}
+              </ol>
+            </section>
+          ))}
+      </details>
       <IndoorConcept />
       {selected && (
         <section

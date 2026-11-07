@@ -55,3 +55,13 @@
 - No heat-protection, exact Google Maps parity, live service or error-free navigation guarantee is made. GPS, indoor access and OSM completeness remain practical limitations.
 
 - Final visual/UI pass removed an over-broad SVG rule in the indoor concept panel. Map worker loading is now explicit and version-matched, synced from the installed MapLibre package by predev/prebuild; its upstream licence is included.
+
+## Walking presentation update
+
+- All nine test files passed, including walking-budget rejection, combined transit access/egress limits and simulation pause/branch/arrival transitions.
+- Production `next build` compiled and checked TypeScript successfully.
+- Actual production-app Chromium run completed both indoor and outdoor presentation journeys; no JavaScript page errors. The E? marker opened the branch choices.
+- Fresh-build mobile check at 390×844: no horizontal overflow, 380px map, one-column layout, no page errors. Embedded MP4 metadata loaded (81.4 seconds).
+- All ten application pages returned HTTP 200, including `/demo`.
+- Recording: `public/videos/walking-journey-demo.mp4`, ~2.75 MB. This is a simulated presentation, not field validation.
+- Real GPS accuracy, indoor access and positioning have not been field-tested. The live reviewed-passage registry remains empty. Supabase data and RLS were not changed by this update.

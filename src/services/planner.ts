@@ -31,7 +31,7 @@ export async function plan(
   to: Location,
   data: Collection,
   demoMode: boolean,
-  options: { walker?: WalkingProvider } = {},
+  options: { walker?: WalkingProvider; maxWalkingMinutes?: number } = {},
 ): Promise<Journey[]> {
   if (distance(from, to) < 30)
     throw new Error("Choose two different locations.");
@@ -137,9 +137,22 @@ export async function plan(
       /* A missing access path cannot be replaced with a straight line. */
     }
   }
+  const limit = walkingLimit(options.maxWalkingMinutes);
+  const eligible = results.filter((r) => walkingMinutes(r) <= limit);
+  if (results.length && !eligible.length)
+    throw new Error(
+      `No supported journey fits your ${limit}-minute total walking budget. Choose closer places or add connected transit data. Long walks have been excluded.`,
+    );
   if (!results.length)
     throw new Error(
       `No supported pedestrian or transit connection was found. ${walkingError}`,
     );
-  return results;
+  return eligible;
 }
+
+export const walkingMinutes = (route: Journey) =>
+  route.legs
+    .filter((l) => l.mode === "walk")
+    .reduce((sum, l) => sum + l.minutes, 0);
+export const walkingLimit = (value = 20) =>
+  Number.isFinite(value) ? Math.min(20, Math.max(1, value)) : 20;

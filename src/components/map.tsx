@@ -32,6 +32,8 @@ export default function MobilityMap({
   onPassage,
   conceptOnly = false,
   conceptFootprint,
+  simulatedPosition,
+  onConceptDecision,
 }: {
   data: Collection;
   from: Location;
@@ -44,6 +46,8 @@ export default function MobilityMap({
   onPassage?: (id: string) => void;
   conceptOnly?: boolean;
   conceptFootprint?: [number, number][];
+  simulatedPosition?: [number, number];
+  onConceptDecision?: () => void;
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
@@ -51,6 +55,9 @@ export default function MobilityMap({
   const reduced = useRef(false);
   const vectorBase = useRef<L.MaplibreGL | null>(null);
   pick.current = onPick;
+  const conceptDecision = useRef(onConceptDecision);
+  conceptDecision.current = onConceptDecision;
+  const simulationMarker = useRef<L.CircleMarker | null>(null);
   const [failed, setFailed] = useState(false);
   const [follow, setFollow] = useState(true);
   const userLayer = useRef<L.CircleMarker | null>(null),
@@ -110,6 +117,9 @@ export default function MobilityMap({
       observer.disconnect();
       m.remove();
       map.current = null;
+      simulationMarker.current = null;
+      userLayer.current = null;
+      accuracyLayer.current = null;
     };
   }, []);
   useEffect(() => {
@@ -206,7 +216,10 @@ export default function MobilityMap({
       })
         .bindPopup(content)
         .addTo(layer);
-      marker.on("click", () => pick.current?.(p));
+      marker.on("click", () => {
+        if (conceptOnly && p.id === from.id) conceptDecision.current?.();
+        else pick.current?.(p);
+      });
     };
     data.places.forEach((p) => add(p, "•", "#1a9b8d"));
     data.transport_stops.forEach((p) =>
@@ -378,6 +391,22 @@ export default function MobilityMap({
       layer.remove();
     };
   }, [passageSignature, selectedPassage]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !simulatedPosition) return;
+    const latlng: L.LatLngTuple = [simulatedPosition[1], simulatedPosition[0]];
+    if (!simulationMarker.current)
+      simulationMarker.current = L.circleMarker(latlng, {
+        radius: 10,
+        color: "white",
+        weight: 4,
+        fillColor: "#7652c5",
+        fillOpacity: 1,
+      })
+        .bindTooltip("Simulated walker · not GPS")
+        .addTo(m);
+    simulationMarker.current.setLatLng(latlng);
+  }, [simulatedPosition]);
   return (
     <div className="map-shell">
       <div

@@ -74,3 +74,11 @@ smarter-qatar/
   tests/walking-graph.test.ts
   tsconfig.json
 ```
+
+Walking presentation additions:
+- `src/app/demo/page.tsx`: separate presentation route.
+- `src/components/journey-demo.tsx`: interactive simulated walk and branch choice.
+- `src/services/journey-simulation.ts`: path interpolation and pause/arrival transitions.
+- `tests/journey-simulation.test.ts`: deterministic simulation checks.
+- `public/videos/walking-journey-demo.mp4`: actual browser recording, with simulated movement.
+- `docs/WALKING-DEMO.md`: presentation instructions and survey requirements.

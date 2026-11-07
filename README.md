@@ -136,3 +136,7 @@ git push
 ```
 
 Never commit `.env.local` or service-role keys. Pushing source to GitHub does not require deploying the application.
+
+### Interactive walking presentation
+
+Open `/demo` to show the judges an accelerated walking journey with an automatic mall decision point, clickable E? entrance, through/around branches and an arrival state. All demo paths and doors are visibly labelled hypothetical; this page does not use GPS. See [the demo guide](docs/WALKING-DEMO.md). Real route planning now caps total walking at 20 minutes (15-minute option available), with expanded walking directions and opt-in **Start my journey** GPS tracking.
