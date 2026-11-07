@@ -90,7 +90,7 @@ Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed que
 
 ## Dashboard video
 
-The first dashboard uses the user-supplied eight-second city clip as a decorative background. The local H.264 MP4 is compressed to about 2.6 MB, has no audio, and loops while visible. A light overlay keeps the journey form readable, and a pause/play button lets users stop the motion. Playback pauses offscreen and in hidden tabs. Reduced-motion or data-saving settings use a still poster without loading the video. Media errors also fall back to the poster. Other application pages do not load this background.
+The first dashboard uses the user-supplied eight-second city clip as a decorative background. The local H.264 MP4 is compressed to about 2.6 MB, has no audio, and loops while visible. The video stays at full brightness across the hero, with no fade or tint overlay. White headings and supporting text use text shadows for readability; the journey form retains its solid white surface. A pause/play button lets users stop the motion. Playback pauses offscreen and in hidden tabs. Reduced-motion or data-saving settings use a still poster without loading the video. Media errors also fall back to the poster. Other application pages do not load this background.
 
 ## Maps, photos and UI licences
 

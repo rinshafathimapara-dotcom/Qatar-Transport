@@ -83,7 +83,6 @@ export default function HeroVideo() {
             disablePictureInPicture
           />
         )}
-        <div className="hero-video-scrim" />
       </div>
       {enabled && !failed && (
         <button

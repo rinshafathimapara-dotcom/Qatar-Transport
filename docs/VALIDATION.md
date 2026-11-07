@@ -25,3 +25,5 @@
 - TypeScript and production build passed after integration.
 - First-dashboard-only component supports pause/play, poster fallback, reduced-motion and save-data preferences, offscreen pausing and hidden-tab pausing.
 - Browser QA attempted via managed preview; `sites-preview start` failed with `preview relay unavailable: No such file or directory`. No browser playback or visual verification is claimed for this update.
+
+- Dashboard styling update: removed desktop and mobile fade overlays completely. White hero text uses text shadows over the unobscured clip; form inputs retain their existing opaque card. No new browser verification for this styling update.
