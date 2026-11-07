@@ -88,15 +88,19 @@ Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed que
 - Demand forecasts come from the table or demo fixtures. Timestamps are shown in Qatar time. No live Uber integration exists.
 - Balanced ranking uses a documented heuristic: minutes + 3 × walking kilometres + 5 × transfers. Backend `balanced`, `fastest`, and `cheapest` map into the existing UI controls. Only default priority affects ranking. The other saved preferences are advisory until provider coverage supports hard constraints.
 
+## Dashboard video
+
+The first dashboard uses the user-supplied eight-second city clip as a decorative background. The local H.264 MP4 is compressed to about 2.6 MB, has no audio, and loops while visible. A light overlay keeps the journey form readable, and a pause/play button lets users stop the motion. Playback pauses offscreen and in hidden tabs. Reduced-motion or data-saving settings use a still poster without loading the video. Media errors also fall back to the poster. Other application pages do not load this background.
+
 ## Maps, photos and UI licences
 
 The map uses Leaflet 1.9.4. Places, transport stops, parking and shade segments come from Supabase. Places and station names both populate location search. Connected mode excludes demo rows by default; use **Include demo records** explicitly. Join records inherit inclusion from parent routes and stops.
 
 Default tiles use OpenStreetMap standard raster tiles with visible attribution. For local evaluation only; review https://operations.osmfoundation.org/policies/tiles/ before wider use and choose a suitable commercial or self-hosted tile provider. OSM tiles require Internet access. No tiles are prefetched or scraped.
 
-Photo: **Doha skyline**, Haakon S. Krohn (4 March 2013), https://commons.wikimedia.org/wiki/File:Doha_skyline.jpg, **CC BY-SA 3.0**, https://creativecommons.org/licenses/by-sa/3.0/. The same image is displayed in two CSS crops. The downloaded image retains that licence; any adapted image must preserve its share-alike terms. Photo attribution is visible in Explore → data information.
+Photo: **Doha skyline**, Haakon S. Krohn (4 March 2013), https://commons.wikimedia.org/wiki/File:Doha_skyline.jpg, **CC BY-SA 3.0**, https://creativecommons.org/licenses/by-sa/3.0/. The skyline image remains available as an original project asset; the dashboard now uses the user-provided clip and its derived poster. The downloaded image retains that licence; any adapted image must preserve its share-alike terms. Photo attribution is visible in Explore → data information.
 
-StatsCounter and StaggerText are adapted from Ashutoshx7/VengeanceUI under MIT; full notice is in `docs/VENGEANCEUI-LICENSE.txt`. Their `framer-motion` imports were adapted to the compatible `motion/react` API, and reduced-motion support was added. The supplied image-collage registry URL returned HTTP 404, so the collage is implemented locally in the hero. No shadcn CLI scaffold was needed. Lucide icons and motion are installed directly; Tailwind 4 is configured via PostCSS.
+StatsCounter and StaggerText are adapted from Ashutoshx7/VengeanceUI under MIT; full notice is in `docs/VENGEANCEUI-LICENSE.txt`. Their `framer-motion` imports were adapted to the compatible `motion/react` API, and reduced-motion support was added. The supplied image-collage registry URL returned HTTP 404, so the original collage was implemented locally; it has now been replaced by the dashboard video background. No shadcn CLI scaffold was needed. Lucide icons and motion are installed directly; Tailwind 4 is configured via PostCSS.
 
 ## Validation and limitations
 

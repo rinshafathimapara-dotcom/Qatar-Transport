@@ -47,6 +47,7 @@ import { distance } from "@/services/geo";
 import { normalizePriority, storedPriority } from "@/services/preferences";
 import LocationSearch from "./location-search";
 import StatsCounter from "./ui/stats-counter";
+import HeroVideo from "./hero-video";
 import StaggerText from "./ui/stagger-text";
 const Map = dynamic(() => import("./map"), {
   ssr: false,
@@ -736,7 +737,8 @@ export default function MobilityApp({
           )}
         {current === "home" && (
           <>
-            <section className="hero">
+            <section className="hero hero-with-video">
+              <HeroVideo />
               <div className="hero-copy">
                 <div className="eyebrow">
                   <span /> LESS GUESSWORK. MORE QATAR.
@@ -781,26 +783,13 @@ export default function MobilityApp({
                 </div>
               </div>
               <div className="hero-art">
-                <div className="photo photo-main">
-                  <img
-                    src="/images/doha.jpg"
-                    alt="Doha skyline and waterfront"
-                  />
-                  <div className="photo-shade" />
-                  <span className="photo-caption">
-                    YOUR CITY.
+                <div className="hero-video-caption">
+                  <span>YOUR CITY. YOUR NEXT CONNECTION.</span>
+                  <strong>
+                    A better way
                     <br />
-                    <b>Closer than you think.</b>
-                  </span>
-                </div>
-                <div className="photo photo-small">
-                  <img
-                    src="/images/doha.jpg"
-                    alt="Detail of the Doha skyline"
-                  />
-                  <span>
-                    <TrainFront size={16} /> A DIFFERENT PERSPECTIVE
-                  </span>
+                    to get there.
+                  </strong>
                 </div>
                 <div className="floating-route">
                   <span className="floating-icon">

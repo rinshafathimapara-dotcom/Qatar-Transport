@@ -13,7 +13,9 @@ smarter-qatar/
   package-lock.json
   package.json
   postcss.config.mjs
+  public/images/dashboard-city-poster.jpg
   public/images/doha.jpg
+  public/videos/dashboard-city.mp4
   scripts/check-backend.mjs
   src/app/[section]/page.tsx
   src/app/api/geocode/route.ts
@@ -23,6 +25,7 @@ smarter-qatar/
   src/app/layout.tsx
   src/app/not-found.tsx
   src/app/page.tsx
+  src/components/hero-video.tsx
   src/components/location-search.tsx
   src/components/map.tsx
   src/components/mobility-app.tsx

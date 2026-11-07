@@ -18,3 +18,10 @@
 
 - Final schema: all 15 exact column probes succeeded. All ten public dataset queries still returned zero visible rows. No database writes or policy changes.
 - Transit MVP tests cover required schedules, forward-only edges, duplicate sequence rejection, no fabricated reverse service and backend priority mappings.
+
+## Dashboard video update
+
+- Uploaded video optimized locally to H.264, 1280 × 720, approximately 7.92 seconds and 2.6 MB. Audio removed; MP4 fast-start metadata enabled.
+- TypeScript and production build passed after integration.
+- First-dashboard-only component supports pause/play, poster fallback, reduced-motion and save-data preferences, offscreen pausing and hidden-tab pausing.
+- Browser QA attempted via managed preview; `sites-preview start` failed with `preview relay unavailable: No such file or directory`. No browser playback or visual verification is claimed for this update.
