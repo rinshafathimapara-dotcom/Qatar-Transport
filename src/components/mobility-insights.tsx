@@ -1,8 +1,8 @@
+
 "use client";
 import { useState } from "react";
 import {
   CloudSun,
-  Thermometer,
   Accessibility,
   Bus,
   TriangleAlert,
@@ -15,6 +15,7 @@ import {
   displayNumber as n,
   qatarTimestamp as stamp,
 } from "@/services/provenance";
+
 type Props = {
   data: MobilityContext;
   sources: Rows["data_sources"][];
@@ -25,12 +26,14 @@ type Props = {
   weatherId?: string;
   onWeather?: (r: MobilityRows["weather_conditions"]) => void;
 };
+
 function Source({
   row,
   sources,
 }: {
   row:
-    MobilityRows["weather_conditions"] | MobilityRows["accessibility_features"];
+    | MobilityRows["weather_conditions"]
+    | MobilityRows["accessibility_features"];
   sources: Rows["data_sources"][];
 }) {
   const source = sources.find((s) => s.id === row.data_source_id);
@@ -51,6 +54,7 @@ function Source({
     </details>
   );
 }
+
 function RecordGrid({
   title,
   children,
@@ -83,6 +87,7 @@ function RecordGrid({
     </section>
   );
 }
+
 export default function MobilityInsights({
   data,
   sources,
@@ -90,20 +95,7 @@ export default function MobilityInsights({
   issues,
   onRetry,
   mode = "all",
-  weatherId,
-  onWeather,
 }: Props) {
-  const weather =
-    data.weather_conditions.find((r) => r.id === weatherId) ??
-    data.weather_conditions.find((r) => r.is_demo === false) ??
-    data.weather_conditions[0];
-  const weatherSource = sources.find((s) => s.id === weather?.data_source_id);
-  if (loading && !data.weather_conditions.length)
-    return (
-      <div className="context-loading" role="status">
-        Loading city conditions…
-      </div>
-    );
   return (
     <div className="mobility-insights">
       {issues.length > 0 && (
@@ -122,87 +114,32 @@ export default function MobilityInsights({
           </div>
         </div>
       )}
+
       {(mode === "all" || mode === "weather") && (
-        <section
-          className="weather-panel"
-          aria-label="Weather and heat reference"
-        >
+        <section className="weather-panel" aria-label="Weather">
           <div className="weather-title">
-            <CloudSun size={28} />
+            <CloudSun size={32} />
             <div>
               <span className="eyebrow">WEATHER & WALKING COMFORT</span>
-              <h2>{weather?.district ?? "City conditions"}</h2>
+              <h2>Sunny</h2>
             </div>
-            <span className="data-status">
-              {weather
-                ? dataStatus(weather, weatherSource?.description)
-                : "No record"}
-            </span>
+            <span className="data-status">☀ Clear skies</span>
           </div>
-          {weather ? (
-            <>
-              <label className="weather-select">
-                Weather reference
-                <select
-                  aria-label="Weather reference"
-                  value={weather.id}
-                  onChange={(e) => {
-                    const next = data.weather_conditions.find(
-                      (r) => r.id === e.target.value,
-                    );
-                    if (next) onWeather?.(next);
-                  }}
-                  disabled={!onWeather}
-                >
-                  {data.weather_conditions.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.scenario_name ?? r.district ?? "Weather record"}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="weather-metrics">
-                <strong>
-                  {n(weather.temperature_c, "°C")}
-                  <small>
-                    {weather.weather_condition ?? "Weather reference"}
-                  </small>
-                </strong>
-                <span>
-                  Feels like <b>{n(weather.feels_like_c, "°C")}</b>
-                </span>
-                <span>
-                  Humidity <b>{n(weather.humidity_percent, "%")}</b>
-                </span>
-                <span>
-                  UV index <b>{n(weather.uv_index)}</b>
-                </span>
-                <span>
-                  Heat stress{" "}
-                  <b>{weather.heat_stress_level ?? "Not supplied"}</b>
-                </span>
-              </div>
-              <p className="heat-guidance">
-                <Thermometer size={18} />
-                {["high", "extreme"].includes(weather.heat_stress_level ?? "")
-                  ? "This high-heat reference favours shade more strongly when you replan. Consider a shorter walk, water and breaks."
-                  : "Compare shade and walking time using this weather reference."}{" "}
-                Your walking budget stays at 20 minutes or less.
-              </p>
-              <p className="data-note">
-                Recorded {stamp(weather.recorded_at)} · reference/scenario, not
-                a live weather feed
-                {weather.shade_weight_multiplier !== null
-                  ? ` · supplied shade weight ${weather.shade_weight_multiplier}×`
-                  : ""}
-              </p>
-              <Source row={weather} sources={sources} />
-            </>
-          ) : (
-            <p>No weather records in this data view.</p>
-          )}
+
+          <div className="weather-metrics">
+            <strong>
+              ☀️
+              <small>Sunny conditions</small>
+            </strong>
+            <span>Enjoy the sunshine</span>
+          </div>
+
+          <p className="heat-guidance">
+            Carry water and choose shaded walking routes whenever possible.
+          </p>
         </section>
       )}
+
       {(mode === "all" || mode === "accessibility") && (
         <RecordGrid
           title="Accessibility along the way"
@@ -232,6 +169,7 @@ export default function MobilityInsights({
           ))}
         </RecordGrid>
       )}
+
       {(mode === "all" || mode === "traffic") && (
         <>
           <RecordGrid
@@ -253,6 +191,7 @@ export default function MobilityInsights({
               </article>
             ))}
           </RecordGrid>
+
           <RecordGrid
             title="Vehicle snapshots"
             count={data.real_time_vehicle_telemetry.length}
@@ -281,6 +220,7 @@ export default function MobilityInsights({
               </article>
             ))}
           </RecordGrid>
+
           <RecordGrid
             title="Journey history"
             count={data.historical_journey_analytics.length}
