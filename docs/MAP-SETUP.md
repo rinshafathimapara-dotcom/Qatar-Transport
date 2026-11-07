@@ -1,29 +1,34 @@
-# Restore the street-map background
+# Street-map background — no signup required
 
-The supplied screenshot shows access-blocked tiles from OpenStreetMap's public tile service. That basemap service is separate from Supabase records. Do not work around its block with alternate subdomains, a proxy or spoofed request headers.
+## Default: OpenFreeMap
 
-## CARTO setup for this student prototype
+The app now uses https://openfreemap.org/ by default. Its official public service explicitly allows website/app usage without signup, API keys or registration. The map data is from OpenStreetMap; it is served by independent OpenFreeMap infrastructure, not the blocked OpenStreetMap community raster server.
 
-1. Open https://carto.com/basemaps/apikey/.
-2. Click **Request a key** and complete the email form. The current page says no full account is required and the key is delivered by email. If the embedded form fails, use its **open the form on its own page** link.
-3. Review the current [basemap terms](https://carto.com/legal/basemap-terms/). They currently include a free non-commercial tier; use a plan appropriate to the actual project. A person must request and accept the key.
-4. Pull the latest repository code. In Codespaces, stop the dev server with Ctrl+C and run `git pull origin main`.
-5. In the existing `.env.local` next to `package.json`, keep both Supabase lines and add:
+1. In Codespaces, stop the running app using Ctrl+C.
+2. Run `git pull origin main`.
+3. Run `npm install` to add the vector renderer and official Leaflet adapter.
+4. If you previously set any map-provider overrides in `.env.local`, remove or blank only these lines: `NEXT_PUBLIC_CARTO_MAPS_KEY`, `NEXT_PUBLIC_MAP_TILE_URL`, `NEXT_PUBLIC_MAP_ATTRIBUTION`. Keep the Supabase variables.
+5. Run `npm run dev` and open port 3000 using **Ports → Open in Browser**.
 
-```env
-NEXT_PUBLIC_CARTO_MAPS_KEY=YOUR_CARTO_BASEMAP_KEY
-```
+No new environment variables, account, card or key are required. OpenFreeMap needs an Internet connection and the vector renderer needs WebGL. Leaflet retains the app's marker selection, stops, shade layers and route polylines. The required OpenFreeMap/OpenMapTiles/OpenStreetMap credit is shown in Leaflet's attribution control.
 
-6. Leave `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_ATTRIBUTION` blank unless intentionally using another authorized provider. An old custom URL takes precedence and will prevent CARTO from being selected.
-7. Restart with `npm run dev` and open port 3000 from Codespaces **Ports → Open in Browser**. In a Windows PowerShell terminal use `npm.cmd run dev`.
-8. If adding website restrictions in CARTO's emailed dashboard, use the actual preview website origin, such as `https://YOUR-CODESPACE-3000.app.github.dev`, not the GitHub repository URL. Keep the Codespaces preview private; domain restrictions alone do not change its audience.
+Official references checked on 7 November 2026:
+- https://openfreemap.org/ — service, commercial usage and attribution details.
+- https://openfreemap.org/quick_start/ — explicitly documents the Leaflet integration used here.
+- https://openfreemap.org/tos/ — current terms; the app does not prefetch areas or perform offline bulk downloads.
+- https://github.com/maplibre/maplibre-gl-leaflet — official adapter.
 
-The application supplies the required OpenStreetMap and CARTO attribution. The map key is a browser key and will be visible in tile requests. `.env.local` stays out of GitHub; configure provider restrictions and usage limits as appropriate. This is not your Supabase key and does not change database access.
+OpenFreeMap does not offer an SLA. A future production operator can choose self-hosting or another licensed provider if service guarantees are needed. No proxy, forged header or alternative OSM tile-server hostname is used to evade the previous block.
 
-## Custom provider
+## Optional provider overrides
 
-Use an authorized HTTPS raster URL with `{z}`, `{x}` and `{y}`, and specify the provider credit using `NEXT_PUBLIC_MAP_ATTRIBUTION`. Custom credit is rendered as plain text beside the OSM credit; verify it meets your provider's requirements. The blocked OSM tile host and its subdomains are rejected for this project.
+These are optional and take precedence over OpenFreeMap:
 
-## Verification limits
+- An authorized custom raster URL with `{z}`, `{x}` and `{y}` via `NEXT_PUBLIC_MAP_TILE_URL`, plus required `NEXT_PUBLIC_MAP_ATTRIBUTION` text. Verify custom credits meet provider terms.
+- A CARTO browser key via `NEXT_PUBLIC_CARTO_MAPS_KEY`. Its current service requires a key, including on free tiers; https://carto.com/basemaps/apikey/ and https://carto.com/legal/basemap-terms/.
 
-Current CARTO docs and key-registration instructions were checked on 7 November 2026. Automated configuration tests cover no-key behavior, correct key encoding and credits, rejection of the blocked OSM hosts, and custom URL/credit requirements. TypeScript and production build are checked. No CARTO key has been configured in this session, so successful live tile loading is not yet verified. Data-layer markers remain independent of the tile provider.
+Do not reuse your Supabase key for maps. `.env.local` remains ignored by Git. The blocked OSM raster host and its subdomains remain rejected as explicit custom configuration.
+
+## Failure handling
+
+Failed providers stop rendering and offer manual **Retry map**. Dataset markers and schematic journey lines remain visible on a clearly labelled neutral background. A basemap failure does not change Supabase data or convert demo routes into verified routes.

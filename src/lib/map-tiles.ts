@@ -4,7 +4,13 @@ type TileOptions = {
   customAttribution?: string;
 };
 export type MapTiles =
-  | { status: "ready"; url: string; attribution: string; maxZoom: number }
+  | {
+      status: "ready";
+      kind: "raster" | "vector";
+      url: string;
+      attribution: string;
+      maxZoom: number;
+    }
   | { status: "unconfigured" | "invalid"; message: string };
 const osmCredit =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -52,6 +58,7 @@ export function resolveMapTiles({
         };
       return {
         status: "ready",
+        kind: "raster",
         url: custom,
         attribution: osmCredit + " · " + escapeHtml(customAttribution.trim()),
         maxZoom: 19,
@@ -68,6 +75,7 @@ export function resolveMapTiles({
   if (key) {
     return {
       status: "ready",
+      kind: "raster",
       url: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`,
       attribution:
         osmCredit + ' · © <a href="https://carto.com/attributions">CARTO</a>',
@@ -75,8 +83,12 @@ export function resolveMapTiles({
     };
   }
   return {
-    status: "unconfigured",
-    message:
-      "Street map not configured. Places, stations and route outlines are shown without a street background.",
+    status: "ready",
+    kind: "vector",
+    url: "https://tiles.openfreemap.org/styles/liberty",
+    attribution:
+      '<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://openmaptiles.org/">OpenMapTiles</a> · ' +
+      osmCredit,
+    maxZoom: 20,
   };
 }

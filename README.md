@@ -51,7 +51,7 @@ Local demo profile and saved journeys are stored in this browser's localStorage.
 | `GRAPHHOPPER_URL`               | Real walking          | Your licensed/self-hosted GraphHopper base URL, e.g. `https://routing.example.org/` |
 | `GRAPHHOPPER_API_KEY`           | Provider dependent    | Server-only routing credential                                                      |
 | `PHOTON_URL`                    | External place search | Approved/self-hosted Photon base URL                                                |
-| `NEXT_PUBLIC_CARTO_MAPS_KEY` | Street-map background | Browser key from https://carto.com/basemaps/apikey/ |
+| `NEXT_PUBLIC_CARTO_MAPS_KEY` | Optional override | CARTO browser key; leave blank for no-signup OpenFreeMap |
 | `NEXT_PUBLIC_MAP_TILE_URL` | Optional alternative | Authorized raster template with `{z}/{x}/{y}` |
 | `NEXT_PUBLIC_MAP_ATTRIBUTION` | With custom template | Required custom-provider credit |
 
@@ -98,9 +98,9 @@ The first dashboard uses the user-supplied eight-second city clip as a decorativ
 
 The map uses Leaflet 1.9.4. Places, transport stops, parking and shade segments come from Supabase. Places and station names both populate location search. Connected mode excludes demo rows by default; use **Include demo records** explicitly. Join records inherit inclusion from parent routes and stops.
 
-The street-map background uses CARTO Voyager when `NEXT_PUBLIC_CARTO_MAPS_KEY` is configured, with visible OpenStreetMap and CARTO credits. A key is required by CARTO's current terms, including for its free non-commercial allowance. See [map setup](docs/MAP-SETUP.md). An authorized custom raster provider may instead be configured using `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_ATTRIBUTION`.
+The default street map is **OpenFreeMap**, whose public service requires no signup or API key. Its vector background is rendered through the official MapLibre–Leaflet adapter; Leaflet still owns the location markers, route lines and interactions. Required OpenFreeMap, OpenMapTiles and OpenStreetMap attribution is visible. See [map setup](docs/MAP-SETUP.md). No OSM community tile-server workaround is used.
 
-There is no automatic fallback to the OpenStreetMap community tile server: it blocked this application's requests. Missing configuration shows a clearly labelled neutral background with dataset markers and schematic routes. Tile failures stop the layer and offer manual Retry rather than repeated requests to a blocked service. No headers, proxy or alternate OSM host are used to bypass the block.
+Optional CARTO or authorized custom raster overrides remain available through environment variables. Leave all map-provider variables blank to use the no-signup default. If the renderer, network or WebGL fails, the app shows a clear error and retains dataset markers on a neutral background. The public service has no SLA; self-hosting or another authorized provider remains an option for production.
 
 Photo: **Doha skyline**, Haakon S. Krohn (4 March 2013), https://commons.wikimedia.org/wiki/File:Doha_skyline.jpg, **CC BY-SA 3.0**, https://creativecommons.org/licenses/by-sa/3.0/. The skyline image remains available as an original project asset; the dashboard now uses the user-provided clip and its derived poster. The downloaded image retains that licence; any adapted image must preserve its share-alike terms. Photo attribution is visible in Explore → data information.
 

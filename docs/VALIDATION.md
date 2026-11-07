@@ -31,6 +31,14 @@
 ## Blocked basemap correction
 
 - Removed the direct OpenStreetMap community tile-server default after the user observed access-blocked tiles.
-- Added explicit CARTO key configuration and required provider attribution. No key means no third-party tile request; dataset markers remain on a clearly labelled neutral background.
+- Added explicit CARTO key configuration and required provider attribution. In that version, no key meant no third-party tile request; the subsequent no-signup update below supersedes that default.
 - Failed layers stop requesting tiles; manual Retry is available. Configuration tests, TypeScript and production build pass.
 - CARTO's current documentation and key page were read; no live CARTO tile success is claimed without a configured key. See MAP-SETUP.md.
+
+## No-signup basemap update
+
+- OpenFreeMap is now the default. Its official website, quick-start guide and terms were checked; no account or API key is required for its public service.
+- Leaflet remains the application map. MapLibre GL JS 5.24.0 and the official Leaflet adapter 0.1.4 render its vector background, with mandatory source attribution.
+- A live isolated Chromium smoke test rendered Doha through the installed Leaflet/MapLibre adapter. The map reported `loaded: true`, `tilesLoaded: true`, and no map errors; its screenshot was visually inspected. This verifies the provider/adapter, not a complete browser regression of the Next.js app.
+- The application's production build, TypeScript and configuration tests pass. WebGL2 failure shows an unavailable state while retaining data markers.
+- Optional licensed raster/CARTO configurations remain supported. No request goes to the previously blocked OSM raster service.

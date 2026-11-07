@@ -1,8 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolveMapTiles } from "../src/lib/map-tiles";
-test("no credentials makes no request to a public tile demo server", () => {
-  assert.equal(resolveMapTiles({}).status, "unconfigured");
+test("no credentials selects OpenFreeMap with required credits", () => {
+  const c = resolveMapTiles({});
+  assert.equal(c.status, "ready");
+  if (c.status === "ready") {
+    assert.equal(c.kind, "vector");
+    assert.equal(c.url, "https://tiles.openfreemap.org/styles/liberty");
+    assert.match(c.attribution, /OpenFreeMap/);
+    assert.match(c.attribution, /OpenMapTiles/);
+    assert.match(c.attribution, /OpenStreetMap/);
+    assert.doesNotMatch(c.url, /key=/);
+  }
 });
 test("CARTO uses the supplied key and both provider credits", () => {
   const c = resolveMapTiles({ cartoKey: " a&b " });

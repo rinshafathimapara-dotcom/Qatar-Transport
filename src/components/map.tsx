@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { Collection, Journey, Location } from "@/types/database";
 import { resolveMapTiles } from "@/lib/map-tiles";
 const tiles = resolveMapTiles({
@@ -38,10 +40,16 @@ export default function MobilityMap({
     reduced.current = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    const m = L.map(container.current, { zoomControl: false }).setView(
-      [25.321, 51.532],
-      11,
-    );
+    const m = L.map(container.current, {
+      zoomControl: false,
+      minZoom: 1,
+      maxZoom: 20,
+      maxBounds: [
+        [-85, -180],
+        [85, 180],
+      ],
+      maxBoundsViscosity: 1,
+    }).setView([25.321, 51.532], 11);
     map.current = m;
     L.control.zoom({ position: "topright" }).addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) =>
@@ -64,21 +72,53 @@ export default function MobilityMap({
     const m = map.current;
     if (!m || tiles.status !== "ready") return;
     setFailed(false);
-    const layer = L.tileLayer(tiles.url, {
-      attribution: tiles.attribution,
-      maxZoom: tiles.maxZoom,
-      updateWhenIdle: true,
-      keepBuffer: 1,
-    });
-    layer.on("tileerror", () => {
-      // Stop the failed layer rather than repeatedly fetching blocked tiles.
-      layer.remove();
+    if (tiles.kind === "vector") {
+      const context = document.createElement("canvas").getContext("webgl2");
+      if (!context) {
+        setFailed(true);
+        return;
+      }
+      context.getExtension("WEBGL_lose_context")?.loseContext();
+    }
+    let layer: L.Layer | undefined;
+    let active = true;
+    const stop = () => {
+      if (!active) return;
       setFailed(true);
-    });
-    layer.addTo(m);
+      // Defer removal until the renderer's error event finishes dispatching.
+      window.setTimeout(() => {
+        if (active) layer?.remove();
+      }, 0);
+    };
+    try {
+      if (tiles.kind === "vector") {
+        const vector = maplibreGL({
+          style: tiles.url,
+          attributionControl: false,
+        });
+        layer = vector;
+        vector.addTo(m);
+        vector.getMaplibreMap().on("error", stop);
+        m.attributionControl.addAttribution(tiles.attribution);
+      } else {
+        layer = L.tileLayer(tiles.url, {
+          attribution: tiles.attribution,
+          maxZoom: tiles.maxZoom,
+          updateWhenIdle: true,
+          keepBuffer: 1,
+        })
+          .on("tileerror", stop)
+          .addTo(m);
+      }
+    } catch {
+      stop();
+    }
     return () => {
-      layer.off();
-      layer.remove();
+      active = false;
+      layer?.off();
+      layer?.remove();
+      if (tiles.kind === "vector")
+        m.attributionControl.removeAttribution(tiles.attribution);
     };
   }, [tileAttempt]);
   useEffect(() => {
@@ -202,7 +242,7 @@ export default function MobilityMap({
           </strong>
           <span>
             {failed
-              ? "The map provider could not load. Check the connection, provider key and website restrictions. Dataset locations remain visible."
+              ? "The street map could not load. Check your connection and WebGL support. If using a custom provider, also check its access settings. Dataset locations remain visible."
               : tiles.status !== "ready"
                 ? tiles.message
                 : ""}
