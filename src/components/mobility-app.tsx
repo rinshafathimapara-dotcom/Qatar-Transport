@@ -38,6 +38,7 @@ import type {
   Priority,
   Rows,
   Json,
+  LiveFix,
 } from "@/types/database";
 import { supabase, isDemo } from "@/lib/supabase";
 import { demo } from "@/data/demo";
@@ -48,6 +49,10 @@ import { normalizePriority, storedPriority } from "@/services/preferences";
 import LocationSearch from "./location-search";
 import StatsCounter from "./ui/stats-counter";
 import HeroVideo from "./hero-video";
+import WalkingAssistant from "./walking-assistant";
+import indoorRecords from "@/data/indoor-passages.json";
+import { validatePassages, relevantPassages } from "@/services/navigation";
+const indoorPassages = validatePassages(indoorRecords);
 import StaggerText from "./ui/stagger-text";
 const Map = dynamic(() => import("./map"), {
   ssr: false,
@@ -97,6 +102,8 @@ export default function MobilityApp({
   const router = useRouter(),
     reduced = useReducedMotion();
   const [includeDemo, setIncludeDemo] = useState(false);
+  const [livePosition, setLivePosition] = useState<LiveFix | null>(null);
+  const [selectedPassage, setSelectedPassage] = useState<string | null>(null);
   const [data, setData] = useState<Collection | null>(null),
     [dataError, setDataError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -546,6 +553,10 @@ export default function MobilityApp({
       from={from}
       to={to}
       route={route}
+      livePosition={livePosition}
+      passages={route ? relevantPassages(route, indoorPassages) : []}
+      selectedPassage={selectedPassage}
+      onPassage={setSelectedPassage}
       onPick={
         pick
           ? (p) => {
@@ -730,7 +741,8 @@ export default function MobilityApp({
                   Your teammate should check whether data has been imported and
                   whether the public read policies allow access. Demo places
                   have not been substituted. Map selection still works; real
-                  journey planning also needs a pedestrian routing provider.
+                  walking uses the bundled Doha pilot network when your points
+                  are covered.
                 </p>
               </div>
             </div>
@@ -1001,8 +1013,8 @@ export default function MobilityApp({
                           {data.transit_schedules.length} schedules. The MVP
                           needs all four, with matching IDs and forward stop
                           order. Your teammate should check imports and read
-                          policies. Walking also needs a configured pedestrian
-                          provider.
+                          policies. Walking uses the bundled Doha pilot network;
+                          external providers are optional.
                         </p>
                       </div>
                     </div>
@@ -1018,7 +1030,7 @@ export default function MobilityApp({
                       </strong>
                       <p>
                         {isDemo
-                          ? "Try Msheireb Downtown → Katara. The illustrative gentler option adds 4 minutes to the quicker Metro option, with synthetic 80% versus 65% walking shade. These values are not measured heat exposure."
+                          ? "Walking now follows mapped roads and paths. Preview the indoor-choice concept below, or use reviewed public passages when supplied. No shade percentage or heat-protection guarantee is invented."
                           : "Imported shade segments need a validated spatial matching adapter before comfort can be scored. Walking results show shade as unknown."}
                       </p>
                     </div>
@@ -1105,6 +1117,43 @@ export default function MobilityApp({
                   </div>
                   <div>
                     {picks}
+                    {route && (
+                      <WalkingAssistant
+                        route={route}
+                        passages={indoorPassages}
+                        selectedId={selectedPassage}
+                        onSelect={setSelectedPassage}
+                        onPosition={setLivePosition}
+                        onError={notify}
+                        onReplace={(updated) =>
+                          setRoutes((previous) =>
+                            previous.map((r) =>
+                              r.id === updated.id ? updated : r,
+                            ),
+                          )
+                        }
+                        onReroute={async (fix) => {
+                          if (!data) return;
+                          const origin = {
+                            id: "gps",
+                            name: "Your current location",
+                            latitude: fix.latitude,
+                            longitude: fix.longitude,
+                          };
+                          setBusy(true);
+                          try {
+                            const next = await plan(origin, to, data, isDemo);
+                            setFrom(origin);
+                            setRoutes(next);
+                            setSelected(next[0]?.id || "");
+                          } catch (error) {
+                            notify((error as Error).message);
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      />
+                    )}
                     {mapArea}
                     {route && (
                       <div className="detail-panel">
@@ -1399,12 +1448,6 @@ export default function MobilityApp({
                               onClick={async () => {
                                 setFrom({ ...p, id: "parking-" + p.id });
                                 setRoutes([]);
-                                if (isDemo) {
-                                  notify(
-                                    "Demo parking is a location-only fixture. Configure a pedestrian provider to get the walking route.",
-                                  );
-                                  return;
-                                }
                                 if (!data) return;
                                 setBusy(true);
                                 try {

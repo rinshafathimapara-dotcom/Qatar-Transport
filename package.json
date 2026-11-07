@@ -8,7 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "backend:check": "node scripts/check-backend.mjs"
+    "backend:check": "node scripts/check-backend.mjs",
+    "predev": "node scripts/sync-map-worker.mjs",
+    "prebuild": "node scripts/sync-map-worker.mjs"
   },
   "dependencies": {
     "@maplibre/maplibre-gl-leaflet": "0.1.4",

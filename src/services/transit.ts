@@ -108,6 +108,8 @@ export function approximateTransit(
             {
               mode: route.mode.toLowerCase() as "metro" | "tram" | "bus",
               name: `${route.route_name} · imported stop order`,
+              routeName: route.route_name,
+              routeCode: route.route_code,
               minutes: Math.ceil(rideMinutes),
               distance: Math.round(rideDistance),
               coordinates: chain.map((s) => coord(s!)),

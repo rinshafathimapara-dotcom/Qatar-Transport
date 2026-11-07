@@ -30,9 +30,9 @@ The development server is for local development. Do not expose it publicly.
 
 ## Try the demo
 
-- Home: choose Msheireb Downtown → Katara Cultural Village and Find my journey.
+- Home: try Msheireb Downtown → Museum of Islamic Art for a road-following walking route, or Msheireb → Katara for the demo Metro comparison. Metro sample durations are synthetic, with no official departure claim.
 - Compare Fastest, Shortest, Most comfortable and Budget-friendly. Select a result for its legs and map geometry.
-- Comfort: the illustrated gentler Metro option adds four minutes with synthetic 80% rather than 65% walking shade.
+- Comfort: walking uses the mapped street/path network. Preview the City Center indoor-choice concept; hypothetical doors are labelled and never inserted into live navigation. No shade or heat-protection percentage is invented.
 - Auth: Open demo profile. Save a journey from its detail panel; reopen or delete it in Saved journeys.
 - Settings: save default priority, walking, sun, transit and budget preferences.
 - Explore: filter dataset places and stops, click a marker, select origin/destination on the map.
@@ -43,17 +43,17 @@ Local demo profile and saved journeys are stored in this browser's localStorage.
 
 ## Environment variables
 
-| Name                            | Needed                | Purpose                                                                             |
-| ------------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | For real backend      | Project URL                                                                         |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | For real backend      | Public anon key; permissions come from RLS                                          |
-| `SUPABASE_SERVICE_ROLE_KEY`     | No                    | Reserved contract name; deliberately unused. Never expose it in browser code.       |
-| `GRAPHHOPPER_URL`               | Real walking          | Your licensed/self-hosted GraphHopper base URL, e.g. `https://routing.example.org/` |
-| `GRAPHHOPPER_API_KEY`           | Provider dependent    | Server-only routing credential                                                      |
-| `PHOTON_URL`                    | External place search | Approved/self-hosted Photon base URL                                                |
-| `NEXT_PUBLIC_CARTO_MAPS_KEY` | Optional override | CARTO browser key; leave blank for no-signup OpenFreeMap |
-| `NEXT_PUBLIC_MAP_TILE_URL` | Optional alternative | Authorized raster template with `{z}/{x}/{y}` |
-| `NEXT_PUBLIC_MAP_ATTRIBUTION` | With custom template | Required custom-provider credit |
+| Name                            | Needed                | Purpose                                                                                                           |
+| ------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | For real backend      | Project URL                                                                                                       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | For real backend      | Public anon key; permissions come from RLS                                                                        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | No                    | Reserved contract name; deliberately unused. Never expose it in browser code.                                     |
+| `GRAPHHOPPER_URL`               | Real walking          | Optional override of the bundled local walking network: GraphHopper base URL, e.g. `https://routing.example.org/` |
+| `GRAPHHOPPER_API_KEY`           | Provider dependent    | Server-only routing credential                                                                                    |
+| `PHOTON_URL`                    | External place search | Approved/self-hosted Photon base URL                                                                              |
+| `NEXT_PUBLIC_CARTO_MAPS_KEY`    | Optional override     | CARTO browser key; leave blank for no-signup OpenFreeMap                                                          |
+| `NEXT_PUBLIC_MAP_TILE_URL`      | Optional alternative  | Authorized raster template with `{z}/{x}/{y}`                                                                     |
+| `NEXT_PUBLIC_MAP_ATTRIBUTION`   | With custom template  | Required custom-provider credit                                                                                   |
 
 Both public Supabase values activate connected mode. Connected data errors are displayed; the application never silently substitutes demo fixtures for failed Supabase reads. Restart Next.js after changing environment variables.
 
@@ -78,15 +78,20 @@ The browser client uses only public keys. The request-scoped server helper valid
 
 Dataset reads currently cap each table at 2,000 rows. Add paginated/windowed queries for larger imports. Shade label meanings, confidence units and schedule-day array conventions need semantic documentation. The supplied backend has now been queried read-only; see docs/BACKEND-CONNECTION.md for schema differences and zero-visible-row results.
 
+## Walking navigation and indoor decisions
+
+See [walking navigation](docs/WALKING-NAVIGATION.md) and [routing data provenance/licence](data/routing/README.md). The companion supports opt-in browser GPS with a moving accuracy circle, follow/pan controls and explicit rerouting. Reviewed indoor passages can expose entrance/exit decision points and recalculate inside/outside alternatives. The current reviewed registry is empty; the real City Center outline is used for a clearly labelled hypothetical-door concept simulation, isolated from live navigation. No shared Supabase tables were changed.
+
 ## Providers and production boundaries
 
 - `services/geo.ts`: replaceable geocoding and pedestrian-routing interfaces.
 - `/api/geocode`: Photon adapter, debounced browser calls, cancellation and bounded 24-hour in-process cache. No external geocoding is called without an endpoint. Local dataset suggestions always work. Deploying later requires a shared cache, per-user rate limits, and a provider agreement; do not point at an unapproved public demo service.
-- `/api/walk`: GraphHopper `foot` profile, unencoded geometry, server-only key, timeout and Qatar coordinate bounds. Verify your chosen instance has a true pedestrian profile and licensed Qatar data. It is not tested against a real provider.
-- `services/planner.ts` and `services/transit.ts`: real mode uses the pedestrian provider when configured. The bounded transit MVP requires an active imported route, forward ordered stops within 1.5 km of the endpoints, and a schedule row for each consecutive segment. It labels routes as schematic approximations; sampled segment durations may come from different services and omit waiting time. Days, service calendars, access paths, transfers, fares and shade are not verified. No upcoming departure or complete routing engine is claimed. With neither a pedestrian route nor supported transit data, planning reports the blocker.
-- Demo routes are bounded to four predefined places. Only the central–Katara demo pair includes the synthetic Metro corridor. Tram stops are discoverable, but no tram, bus, Metrolink or ride-hailing route is fabricated.
-- Demo walking geometries are straight-line schematics. They are not safe navigation instructions. Comfort numbers and QAR 2 fare are labelled synthetic.
-- Parking uses Haversine straight-line distance. Real walking geometry is available only through the configured pedestrian provider. No walking time is inferred from straight-line parking distance. Live spaces are shown only from a non-demo live status observed within five minutes. Other observations remain unverified; compare nearby alternatives when a full status is supplied.
+- `/api/walk`: by default searches the bundled ODbL Doha pedestrian graph locally on the Node server. No routing account, API key, contact email or third-party request is required. The pilot network is a dated snapshot, not a complete live navigation service. It estimates time at 75 m/min and reports endpoint snapping. Optional GraphHopper `foot` remains a server-keyed override; it currently rejects building-exclusion requests rather than claiming unsupported indoor detours.
+- `/api/transit-shape`: uses actual mapped OSM Metro/tram relation members to produce a track-aligned shape for a supported imported line/station sequence. Unknown/ambiguous geometry remains unavailable. It supplies no operating schedule.
+- `services/planner.ts` and `services/transit.ts`: all walking legs are routed, never invented straight connectors. Transit candidates still require imported active routes, stop links and duration samples; waiting time, live operation and service calendars are unverified. Colour categories distinguish walking, rail, bus/tram and reviewed indoor paths.
+- The bundled walking pilot covers central Doha, including mapped paths toward Katara/Lusail within its published bounds. Imported disconnected/out-of-area points receive an unavailable state. The demo Red corridor uses corrected OSM station positions with explicit synthetic duration samples. No official Qatar-wide transit network or live ride-hailing integration is claimed.
+- The previous straight-line demo geometry has been removed. Even sample endpoints use road-following walking calculations. Synthetic Metro sample durations remain explicitly marked; fares and shade are unknown. Older saved snapshots with unverified geometry are not drawn—replan them.
+- Parking uses Haversine straight-line distance. Real walking geometry uses the bundled Doha network by default, with optional provider overrides. No walking time is inferred from straight-line parking distance. Live spaces are shown only from a non-demo live status observed within five minutes. Other observations remain unverified; compare nearby alternatives when a full status is supplied.
 - Demand forecasts come from the table or demo fixtures. Timestamps are shown in Qatar time. No live Uber integration exists.
 - Balanced ranking uses a documented heuristic: minutes + 3 × walking kilometres + 5 × transfers. Backend `balanced`, `fastest`, and `cheapest` map into the existing UI controls. Only default priority affects ranking. The other saved preferences are advisory until provider coverage supports hard constraints.
 
@@ -96,7 +101,7 @@ The first dashboard uses the user-supplied eight-second city clip as a decorativ
 
 ## Maps, photos and UI licences
 
-The map uses Leaflet 1.9.4. Places, transport stops, parking and shade segments come from Supabase. Places and station names both populate location search. Connected mode excludes demo rows by default; use **Include demo records** explicitly. Join records inherit inclusion from parent routes and stops.
+The map uses Leaflet 1.9.4. Its vector worker is served locally and kept in sync with the pinned MapLibre package by `scripts/sync-map-worker.mjs` (automatically before dev/build). Places, transport stops, parking and shade segments come from Supabase. Places and station names both populate location search. Connected mode excludes demo rows by default; use **Include demo records** explicitly. Join records inherit inclusion from parent routes and stops.
 
 The default street map is **OpenFreeMap**, whose public service requires no signup or API key. Its vector background is rendered through the official MapLibre–Leaflet adapter; Leaflet still owns the location markers, route lines and interactions. Required OpenFreeMap, OpenMapTiles and OpenStreetMap attribution is visible. See [map setup](docs/MAP-SETUP.md). No OSM community tile-server workaround is used.
 

@@ -36,8 +36,10 @@ test("MVP uses imported forward edges and labels schedule/geometry limits", () =
   assert.match(r[0].warning, /Waiting time/);
 });
 test("missing schedules cannot become a made-up connection", () => {
+  const data = structuredClone(demo);
+  data.transit_schedules = [];
   assert.equal(
-    approximateTransit(demo.places[0], demo.places[1], demo).length,
+    approximateTransit(demo.places[0], demo.places[1], data).length,
     0,
   );
 });

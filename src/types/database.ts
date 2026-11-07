@@ -169,6 +169,35 @@ export type Leg = {
   minutes: number;
   distance: number;
   coordinates: [number, number][];
+  routeName?: string;
+  routeCode?: string;
+  geometry?:
+    "routed" | "verified-indoor" | "mapped-transit" | "schematic" | "concept";
+  environment?: "outdoor" | "indoor";
+  instructions?: WalkingInstruction[];
+};
+export type WalkingInstruction = { text: string; pointIndex: number };
+export type LiveFix = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  timestamp: number;
+};
+export type IndoorPassage = {
+  id: string;
+  name: string;
+  entry: Location;
+  exit: Location;
+  coordinates: [number, number][];
+  footprint: [number, number][];
+  schedule: { days: number[]; opens: string; closes: string }[];
+  source: string;
+  verifiedAt: string;
+  validUntil: string;
+  publicAccess: boolean;
+  airConditioned: boolean;
+  isDemo: boolean;
+  notes: string;
 };
 export type Journey = {
   id: string;

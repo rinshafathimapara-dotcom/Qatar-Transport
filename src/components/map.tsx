@@ -3,9 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
+import { setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Collection, Journey, Location } from "@/types/database";
+import type {
+  Collection,
+  Journey,
+  Location,
+  LiveFix,
+  IndoorPassage,
+} from "@/types/database";
 import { resolveMapTiles } from "@/lib/map-tiles";
+setWorkerUrl("/workers/maplibre-worker.js");
 const tiles = resolveMapTiles({
   cartoKey: process.env.NEXT_PUBLIC_CARTO_MAPS_KEY,
   customUrl: process.env.NEXT_PUBLIC_MAP_TILE_URL,
@@ -18,19 +26,38 @@ export default function MobilityMap({
   to,
   route,
   onPick,
+  livePosition,
+  passages = [],
+  selectedPassage,
+  onPassage,
+  conceptOnly = false,
+  conceptFootprint,
 }: {
   data: Collection;
   from: Location;
   to: Location;
   route?: Journey;
   onPick?: (p: Location) => void;
+  livePosition?: LiveFix | null;
+  passages?: IndoorPassage[];
+  selectedPassage?: string | null;
+  onPassage?: (id: string) => void;
+  conceptOnly?: boolean;
+  conceptFootprint?: [number, number][];
 }) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
     pick = useRef(onPick);
   const reduced = useRef(false);
+  const vectorBase = useRef<L.MaplibreGL | null>(null);
   pick.current = onPick;
   const [failed, setFailed] = useState(false);
+  const [follow, setFollow] = useState(true);
+  const userLayer = useRef<L.CircleMarker | null>(null),
+    accuracyLayer = useRef<L.Circle | null>(null);
+  const passageSignature = passages.map((p) => p.id).join("|");
+  const passageSelect = useRef(onPassage);
+  passageSelect.current = onPassage;
   const [tileAttempt, setTileAttempt] = useState(0);
   const point = (
     p: Pick<Location, "latitude" | "longitude">,
@@ -42,6 +69,9 @@ export default function MobilityMap({
     ).matches;
     const m = L.map(container.current, {
       zoomControl: false,
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
       minZoom: 1,
       maxZoom: 20,
       maxBounds: [
@@ -51,6 +81,7 @@ export default function MobilityMap({
       maxBoundsViscosity: 1,
     }).setView([25.321, 51.532], 11);
     map.current = m;
+    m.on("dragstart", () => setFollow(false));
     L.control.zoom({ position: "topright" }).addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) =>
       pick.current?.({
@@ -60,7 +91,20 @@ export default function MobilityMap({
         longitude: e.latlng.lng,
       }),
     );
-    const observer = new ResizeObserver(() => m.invalidateSize());
+    const observer = new ResizeObserver(() => {
+      m.invalidateSize({ animate: false });
+      const vector = vectorBase.current;
+      if (vector) {
+        const gl = vector.getMaplibreMap();
+        if (gl) {
+          const size = m.getSize(),
+            element = vector.getContainer();
+          element.style.width = `${size.x}px`;
+          element.style.height = `${size.y}px`;
+          gl.resize();
+        }
+      }
+    });
     observer.observe(container.current);
     return () => {
       observer.disconnect();
@@ -87,17 +131,26 @@ export default function MobilityMap({
       setFailed(true);
       // Defer removal until the renderer's error event finishes dispatching.
       window.setTimeout(() => {
-        if (active) layer?.remove();
+        if (active) {
+          vectorBase.current = null;
+          layer?.remove();
+        }
       }, 0);
     };
     try {
       if (tiles.kind === "vector") {
-        const vector = maplibreGL({
+        const options: L.LeafletMaplibreGLOptions & { padding: number } = {
           style: tiles.url,
           attributionControl: false,
-        });
+          padding: 0,
+        };
+        const vector = maplibreGL(options);
         layer = vector;
         vector.addTo(m);
+        vectorBase.current = vector;
+        window.requestAnimationFrame(() => {
+          if (active) vector.getMaplibreMap()?.resize();
+        });
         vector.getMaplibreMap().on("error", stop);
         m.attributionControl.addAttribution(tiles.attribution);
       } else {
@@ -115,6 +168,7 @@ export default function MobilityMap({
     }
     return () => {
       active = false;
+      vectorBase.current = null;
       layer?.off();
       layer?.remove();
       if (tiles.kind === "vector")
@@ -192,13 +246,13 @@ export default function MobilityMap({
         .bindPopup(text)
         .addTo(layer);
     });
-    add(from, "A", "#159b8b");
-    add(to, "B", "#ec725e");
+    add(from, conceptOnly ? "E?" : "A", "#159b8b");
+    add(to, conceptOnly ? "X?" : "B", "#ec725e");
     if (!route && layer.getLayers().length)
       m.fitBounds(layer.getBounds(), {
         padding: [45, 45],
         maxZoom: 14,
-        animate: !reduced.current,
+        animate: false,
       });
     return () => {
       layer.remove();
@@ -208,26 +262,122 @@ export default function MobilityMap({
     const m = map.current;
     if (!m || !route) return;
     const layer = L.featureGroup().addTo(m);
-    route.legs.forEach((l) =>
-      L.polyline(
-        l.coordinates.map(([lng, lat]) => [lat, lng] as L.LatLngTuple),
-        {
-          color: l.mode === "walk" ? "#159b8b" : "#ec725e",
-          weight: 5,
-          dashArray: route.isApproximate || route.isDemo ? "7 7" : undefined,
-        },
-      ).addTo(layer),
-    );
+    if (conceptOnly && conceptFootprint)
+      L.polygon(
+        conceptFootprint.map(([lng, lat]) => [lat, lng] as L.LatLngTuple),
+        { color: "#9a8b72", weight: 2, fillColor: "#f3ead8", fillOpacity: 0.3 },
+      ).addTo(layer);
+    route.legs
+      .filter(
+        (l) =>
+          l.geometry === "routed" ||
+          l.geometry === "verified-indoor" ||
+          l.geometry === "mapped-transit" ||
+          (conceptOnly && l.geometry === "concept"),
+      )
+      .forEach((l) =>
+        L.polyline(
+          l.coordinates.map(([lng, lat]) => [lat, lng] as L.LatLngTuple),
+          {
+            color:
+              l.geometry === "verified-indoor" || l.environment === "indoor"
+                ? "#7652c5"
+                : l.mode === "walk"
+                  ? "#138879"
+                  : l.mode === "bus"
+                    ? "#2479c7"
+                    : l.mode === "tram"
+                      ? "#da9b21"
+                      : "#e75d4e",
+            weight: 5,
+            dashArray:
+              l.geometry === "verified-indoor" || l.geometry === "concept"
+                ? "5 5"
+                : undefined,
+          },
+        ).addTo(layer),
+      );
     if (layer.getLayers().length)
       m.fitBounds(layer.getBounds(), {
         padding: [50, 50],
-        maxZoom: 14,
-        animate: !reduced.current,
+        maxZoom: conceptOnly ? 18 : 17,
+        animate: false,
       });
     return () => {
       layer.remove();
     };
-  }, [route]);
+  }, [route, conceptOnly, conceptFootprint]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    if (!livePosition) {
+      userLayer.current?.remove();
+      accuracyLayer.current?.remove();
+      userLayer.current = null;
+      accuracyLayer.current = null;
+      return;
+    }
+    const latlng: L.LatLngTuple = [
+      livePosition.latitude,
+      livePosition.longitude,
+    ];
+    if (!userLayer.current) {
+      accuracyLayer.current = L.circle(latlng, {
+        radius: livePosition.accuracy,
+        color: "#2479e8",
+        weight: 1,
+        fillOpacity: 0.08,
+      }).addTo(m);
+      userLayer.current = L.circleMarker(latlng, {
+        radius: 8,
+        color: "#fff",
+        weight: 3,
+        fillColor: "#2479e8",
+        fillOpacity: 1,
+      }).addTo(m);
+    }
+    userLayer.current.setLatLng(latlng);
+    accuracyLayer.current?.setLatLng(latlng).setRadius(livePosition.accuracy);
+    const content = document.createElement("div");
+    content.textContent = `Your location · accuracy ±${Math.round(livePosition.accuracy)} m`;
+    userLayer.current.bindPopup(content);
+    if (follow) m.panTo(latlng, { animate: !reduced.current });
+  }, [livePosition, follow]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const layer = L.featureGroup().addTo(m);
+    for (const p of passages) {
+      for (const [type, where] of [
+        ["Entrance / decision point", p.entry],
+        ["Exit", p.exit],
+      ] as const) {
+        const el = document.createElement("button");
+        el.className = "map-marker";
+        el.type = "button";
+        el.style.background = type === "Exit" ? "#7652c5" : "#138879";
+        el.textContent = type === "Exit" ? "X" : "E";
+        el.setAttribute("aria-label", `${p.name} ${type}`);
+        const text = document.createElement("div");
+        text.textContent = `${p.name} · ${type}: ${where.name}. Based on reviewed access data; check signs.`;
+        const marker = L.marker([where.latitude, where.longitude], {
+          icon: L.divIcon({
+            html: el,
+            className: "leaflet-mobility-icon",
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          }),
+        })
+          .bindPopup(text)
+          .addTo(layer);
+        marker.on("click", () => passageSelect.current?.(p.id));
+        if (selectedPassage === p.id && type !== "Exit") marker.openPopup();
+      }
+    }
+    return () => {
+      layer.remove();
+    };
+  }, [passageSignature, selectedPassage]);
   return (
     <div className="map-shell">
       <div
@@ -258,12 +408,43 @@ export default function MobilityMap({
         </div>
       )}
       <span className="map-label">
-        DOHA, QATAR <span>Destinations · Stations · Parking · Shade</span>
+        {conceptOnly ? "CONCEPT SIMULATION" : "DOHA, QATAR"}{" "}
+        <span>
+          {conceptOnly
+            ? "Hypothetical doors · not live directions"
+            : "Destinations · Stations · Parking · Shade"}
+        </span>
       </span>
-      {(route?.isDemo || route?.isApproximate) && (
+      {livePosition && (
+        <button
+          className="map-follow-button"
+          type="button"
+          aria-pressed={follow}
+          onClick={() => setFollow(!follow)}
+        >
+          {follow ? "Following location" : "Follow my location"}
+        </button>
+      )}
+      {route && (
+        <div className="map-route-legend">
+          <span style={{ color: "#138879" }}>● Walk</span>
+          <span style={{ color: "#e75d4e" }}>● Metro</span>
+          <span style={{ color: "#2479c7" }}>● Bus</span>
+          <span style={{ color: "#da9b21" }}>● Tram</span>
+          <span style={{ color: "#7652c5" }}>● Indoor</span>
+        </div>
+      )}
+      {(route?.isDemo ||
+        route?.isApproximate ||
+        route?.legs.some((l) => !l.geometry || l.geometry === "schematic")) && (
         <span className="map-demo">
-          {route.isDemo ? "Demonstration" : "MVP approximation"} · schematic
-          route
+          {conceptOnly
+            ? "Hypothetical entrance, exit and passage · do not follow"
+            : route.legs.some((l) => !l.geometry || l.geometry === "schematic")
+              ? "Unverified segment geometry hidden · stations shown only"
+              : route.isDemo
+                ? "Sample endpoints · road-following walk"
+                : "Estimated journey · mapped walking paths"}
         </span>
       )}
     </div>

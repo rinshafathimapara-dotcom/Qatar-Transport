@@ -5,21 +5,32 @@ smarter-qatar/
   .env.example
   .gitignore
   README.md
-  docs/MAP-SETUP.md
+  data/routing/README.md
+  data/routing/doha-walking.json.gz
+  data/routing/qatar-rail.json.gz
   docs/BACKEND-CONNECTION.md
+  docs/MAP-SETUP.md
   docs/STRUCTURE.md
   docs/VALIDATION.md
   docs/VENGEANCEUI-LICENSE.txt
+  docs/WALKING-NAVIGATION.md
   next-env.d.ts
+  next.config.ts
   package-lock.json
   package.json
   postcss.config.mjs
   public/images/dashboard-city-poster.jpg
   public/images/doha.jpg
   public/videos/dashboard-city.mp4
+  public/workers/LICENSE.MapLibre.txt
+  public/workers/maplibre-worker.js
+  scripts/build-transit-geometries.py
+  scripts/build-walking-network.py
   scripts/check-backend.mjs
+  scripts/sync-map-worker.mjs
   src/app/[section]/page.tsx
   src/app/api/geocode/route.ts
+  src/app/api/transit-shape/route.ts
   src/app/api/walk/route.ts
   src/app/error.tsx
   src/app/globals.css
@@ -27,26 +38,39 @@ smarter-qatar/
   src/app/not-found.tsx
   src/app/page.tsx
   src/components/hero-video.tsx
+  src/components/indoor-concept.tsx
   src/components/location-search.tsx
   src/components/map.tsx
   src/components/mobility-app.tsx
   src/components/ui/stagger-text.tsx
   src/components/ui/stats-counter.tsx
+  src/components/walking-assistant.tsx
   src/data/backend-contract.json
   src/data/demo.ts
+  src/data/indoor-passages.json
+  src/data/mall-concept.json
   src/lib/map-tiles.ts
   src/lib/supabase-config.ts
   src/lib/supabase-server.ts
   src/lib/supabase.ts
+  src/lib/transit-geometry.server.ts
+  src/lib/walking-network.server.ts
   src/services/data.ts
   src/services/geo.ts
+  src/services/indoor-routing.ts
+  src/services/navigation.ts
   src/services/planner.ts
   src/services/preferences.ts
   src/services/transit.ts
+  src/services/walking-graph.ts
   src/types/database.ts
+  tests/indoor-routing.test.ts
   tests/map-tiles.test.ts
+  tests/navigation.test.ts
   tests/planner.test.ts
+  tests/routing-api.test.ts
   tests/supabase-config.test.ts
   tests/transit.test.ts
+  tests/walking-graph.test.ts
   tsconfig.json
 ```

@@ -1,4 +1,4 @@
-import type { Location } from "@/types/database";
+import type { Location, WalkingInstruction } from "@/types/database";
 export function distance(
   a: Pick<Location, "latitude" | "longitude">,
   b: Pick<Location, "latitude" | "longitude">,
@@ -31,25 +31,33 @@ export const geocoder: Geocoder = {
     return res.json();
   },
 };
+export type WalkingResult = {
+  coordinates: [number, number][];
+  minutes: number;
+  distance: number;
+  instructions?: WalkingInstruction[];
+  source?: string;
+  networkDate?: string;
+  snappedFrom?: number;
+  snappedTo?: number;
+};
 export interface WalkingProvider {
   route(
     from: Location,
     to: Location,
-  ): Promise<{
-    coordinates: [number, number][];
-    minutes: number;
-    distance: number;
-  }>;
+    options?: { avoidPolygons?: [number, number][][] },
+  ): Promise<WalkingResult>;
 }
 export const walkingProvider: WalkingProvider = {
-  async route(from, to) {
-    const res = await fetch("/api/walk", {
+  async route(from, to, options) {
+    const response = await fetch("/api/walk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to }),
+      body: JSON.stringify({ from, to, ...options }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Walking routing unavailable");
+    const data = await response.json();
+    if (!response.ok)
+      throw new Error(data.error || "Walking routing unavailable");
     return data;
   },
 };

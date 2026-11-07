@@ -46,4 +46,6 @@ This counts visible records in the ten public dataset tables. It prints no crede
 5. Allow local auth redirects to `http://localhost:3000/profile` and `http://localhost:3000/auth`, and confirm email delivery settings.
 6. Test registration, email confirmation, login, password recovery, preferences and saved journeys using a consenting test user.
 
-Real pedestrian routing still requires a GraphHopper provider. The new transit MVP is limited to imported single-route connections; it does not provide verified service calendars, transfers, shade matching, live parking or ride-hailing feeds.
+Pedestrian routing now uses the bundled Doha OSM pilot graph by default, without a new external provider. The transit MVP uses mapped track geometry when supported and remains limited to imported single-route connections; it does not provide verified service calendars, transfers, shade matching, live parking or ride-hailing feeds.
+
+The final schema does not contain reviewed indoor entrances, exits, access permissions or hours. The new live indoor-choice adapter therefore uses an empty reviewed frontend registry until a separate contract is agreed. Hypothetical concept records never enter that registry. See WALKING-NAVIGATION.md.

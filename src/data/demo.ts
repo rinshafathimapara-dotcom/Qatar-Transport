@@ -63,8 +63,8 @@ export const demo: Collection = {
       name: "Msheireb",
       mode: "metro",
       line_name: "Demo Red corridor",
-      latitude: 25.2836,
-      longitude: 51.528,
+      latitude: 25.282817,
+      longitude: 51.5255767,
       ...meta,
     },
     {
@@ -72,8 +72,8 @@ export const demo: Collection = {
       name: "West Bay",
       mode: "metro",
       line_name: "Demo Red corridor",
-      latitude: 25.326,
-      longitude: 51.529,
+      latitude: 25.3151524,
+      longitude: 51.5198233,
       ...meta,
     },
     {
@@ -81,8 +81,8 @@ export const demo: Collection = {
       name: "Katara",
       mode: "metro",
       line_name: "Demo Red corridor",
-      latitude: 25.358,
-      longitude: 51.516,
+      latitude: 25.36225434,
+      longitude: 51.52174318,
       ...meta,
     },
     {
@@ -100,7 +100,7 @@ export const demo: Collection = {
       id: "red",
       mode: "metro",
       route_code: "DEMO-R",
-      route_name: "Illustrative central–north corridor",
+      route_name: "Red Line · demo schedule",
       operator: "Demonstration only",
       color: "#eb705e",
       is_active: true,
@@ -112,7 +112,27 @@ export const demo: Collection = {
     { id: "rs2", route_id: "red", stop_id: "west", stop_sequence: 2 },
     { id: "rs3", route_id: "red", stop_id: "kat", stop_sequence: 3 },
   ],
-  transit_schedules: [],
+  // Synthetic duration samples only. Parent route is_demo=true; not official departures.
+  transit_schedules: [
+    {
+      id: "demo-s1",
+      route_id: "red",
+      from_stop_id: "msh",
+      to_stop_id: "west",
+      departure_time: "09:00:00",
+      arrival_time: "09:09:00",
+      days_of_week: ["Demo only"],
+    },
+    {
+      id: "demo-s2",
+      route_id: "red",
+      from_stop_id: "west",
+      to_stop_id: "kat",
+      departure_time: "09:09:00",
+      arrival_time: "09:20:00",
+      days_of_week: ["Demo only"],
+    },
+  ],
   parking_locations: [
     {
       id: "p1",

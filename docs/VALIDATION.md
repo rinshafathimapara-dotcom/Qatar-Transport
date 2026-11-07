@@ -42,3 +42,16 @@
 - A live isolated Chromium smoke test rendered Doha through the installed Leaflet/MapLibre adapter. The map reported `loaded: true`, `tilesLoaded: true`, and no map errors; its screenshot was visually inspected. This verifies the provider/adapter, not a complete browser regression of the Next.js app.
 - The application's production build, TypeScript and configuration tests pass. WebGL2 failure shows an unavailable state while retaining data markers.
 - Optional licensed raster/CARTO configurations remain supported. No request goes to the previously blocked OSM raster service.
+
+## Road-following walking, GPS and indoor decisions
+
+- Built a bundled ODbL central-Doha pedestrian graph from the Qatar OSM extract, with original-node topology and no synthetic cross-water links. Source/coverage/rebuild/licence notes are in data/routing/README.md.
+- Actual local engine tests: Msheireb → Museum roughly 1,952 m / 141 coordinates / 27 estimated minutes; Souq roughly 664 m / 46 coordinates. These are snapshot routing estimates, not live conditions.
+- Extracted 17 OSM rail-relation graphs. A supported Red Line shape returned more than 80 coordinates and about 10 km of mapped track, separately from sample timetables.
+- Unit/API checks cover connected paths, no fabricated fallback, polygon avoidance, oneway foot restrictions, invalid endpoints, actual walking/rail responses, GPS geofence accuracy/freshness, Qatar hours, expired/demo access rejection and both indoor choices.
+- An isolated browser harness rendered the actual WalkingAssistant component with mocked browser GPS. Start tracking, receiving a fix, Stop tracking, and through/around concept choices passed without page errors. This is not physical-device GPS or a complete application browser regression.
+- TypeScript, automated tests and the production build pass. Replan old saved snapshots; unverified geometry is hidden.
+- The live reviewed-passage registry is empty. No hypothetical doors are offered to a real GPS user. The City Center demo uses a real OSM footprint with explicitly hypothetical access points and circulation.
+- No heat-protection, exact Google Maps parity, live service or error-free navigation guarantee is made. GPS, indoor access and OSM completeness remain practical limitations.
+
+- Final visual/UI pass removed an over-broad SVG rule in the indoor concept panel. Map worker loading is now explicit and version-matched, synced from the installed MapLibre package by predev/prebuild; its upstream licence is included.
