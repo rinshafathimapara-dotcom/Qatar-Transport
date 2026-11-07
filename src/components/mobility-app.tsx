@@ -1105,7 +1105,10 @@ export default function MobilityApp({
                     <button
                       key={p}
                       aria-pressed={priority === p}
-                      onClick={() => setPriority(p)}
+                      onClick={() => {
+                        setPriority(p);
+                        setSelected("");
+                      }}
                     >
                       {p === "Most comfortable" ? (
                         <Sun size={15} />
